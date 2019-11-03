@@ -5,28 +5,33 @@ var weak_preg1 = /^[a-z0-9]{7,20}$/i;
 var weak_preg2 = /^[0-9]{7,20}$/i;
 var _adm = document.getElementById('admin-list');
 
-function adminTemp(d) {
+function adminTemp(d, u) {
+  let op = `<a href="javascript:editAdmin('${d.username}');">编辑</a> &nbsp; &nbsp;
+  <a href="javascript:delAdmin('${d.username}');" style="color:#491810;">删除</a>`;
+  if (d.username === u.username) {
+    op = '<p class="help-text">[当前用户]</p>';
+  }
   return `<div class="cell small-12 medium-6 large-4" style="padding:0.2rem;">
     <div style="line-height:0.2rem;border-top:solid 0.2rem #af4567;width:90%;"></div>
     <p>用户名：${d.username}</p>
     <p>角色：${d.role}</p>
     <p>邮箱：${d.email}</p>
     <p>
-      <a href="javascript:editAdmin('${d.username}');">编辑</a> &nbsp; &nbsp;
-      <a href="javascript:delAdmin('${d.username}');" style="color:#491810;">删除</a>
+      ${op}
     </p>
   </div>`;
 }
 
 function renderAdminList (dl) {
+  let u = getUser();
   let html = '';
   for(let k in dl) {
-    html += adminTemp(dl[k]);
+    html += adminTemp(dl[k], u);
   }
   _adm.innerHTML = html;
 }
 
-function createAdmin () {
+function createAdmin (t) {
   let a = {
     username : document.getElementById('new-username').value.trim(),
     passwd : document.getElementById('new-passwd').value.trim(),
@@ -46,6 +51,7 @@ function createAdmin () {
     return ;
   }
 
+  t.disabled = true;
   userApiCall('/admin', {
     method : 'POST',
     headers : {
@@ -64,12 +70,15 @@ function createAdmin () {
     }
   }).catch (err => {
     console.log(err);
+  }).finally(() => {
+    t.disabled = false;
   });
 }
 
 var _adminList = {};
 window.onload = function () {
   let u = getUser();
+  _dm.loading();
   userApiCall('/admin').then(d => {
     if (d.status === 'OK') {
       _adminList = d.data;
@@ -77,5 +86,7 @@ window.onload = function () {
     } else {
       sysnotify(d.errmsg);
     }
+  }).finally(() => {
+    _dm.unloading();
   });
 };

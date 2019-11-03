@@ -80,6 +80,7 @@ class apage {
         </div>
         <div id="sys-notify"></div>
         <div id="sys-cover"></div>
+        <div id="sys-loading"></div>
         <script>
           ${p.js}
         </script>

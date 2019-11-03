@@ -238,6 +238,35 @@ var _dm = new function () {
       }
     }
   };
+  this.loadingInterVal = null;
+  this.loadingText = [
+    '&nbsp;&nbsp; . &nbsp;&nbsp;&nbsp; . &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.',
+    '&nbsp;&nbsp;&nbsp;&nbsp; . &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; .',
+    '&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; .',
+    '.&nbsp;&nbsp;.'
+  ];
+  this.loading = function () {
+    let d = document.getElementById('sys-loading');
+    if (!d) {return ;}
+    d.style.cssText = 'z-index:1000;position:fixed;top:18%;width:50%;left:45%;font-weight:bold;text-shadow:0.2rem 0.2rem #e9e9e9;';
+    d.innerHTML = '. . .';
+    var ind = 0;
+    self.loadingInterVal = setInterval(() => {
+      ind += 1;
+      if (ind >= self.loadingText.length) {
+        ind = 0;
+      }
+      d.innerHTML = self.loadingText[ind];
+    }, 350);
+  };
+  
+  this.unloading = function () {
+    let d = document.getElementById('sys-loading');
+    if (!d) {return ;}
+    clearInterval(self.loadingInterVal);
+    d.innerHTML = '';
+    d.style.cssText = '';
+  };
 };
 
 var _user = {};
@@ -307,7 +336,7 @@ window.onpageshow = function () {
     let nd = document.querySelectorAll('.admin-menu');
     for(let i=0; i<nd.length; i++) {
       if (location.href.indexOf(nd[i].href) >= 0) {
-        nd[i].style.cssText = 'background-color:#a5a2b9;font-weight:bold;';
+        nd[i].style.cssText = 'background-color:#cdc9d9;font-weight:bold;';
       } else {
         nd[i].style.cssText = '';
       }
