@@ -193,8 +193,9 @@ function sysnotify (data, status = 'ok', timeout = 4500) {
 function syscover (data) {
   let d = document.getElementById('sys-cover');
   if (!d) {return ;}
-  d.style.cssText = 'z-index:99;position:fixed;width:100%;height:100%;background-color:#fafaff;top:0;left:0;';
+  d.style.cssText = 'z-index:99;position:fixed;width:100%;height:100%;background-color:#fefeff;top:0;left:0;';
   d.innerHTML = data;
+  document.body.style.overflow = 'hidden';
 }
 
 function unsyscover () {
@@ -202,6 +203,7 @@ function unsyscover () {
   if (!d) {return ;}
   d.innerHTML = '';
   d.style.cssText = '';
+  document.body.style.overflow = '';
 }
 
 var _dm = new function () {
