@@ -177,11 +177,11 @@ async function userApiCall (path, options = {}) {
 function sysnotify (data, status = 'ok', timeout = 4500) {
   let d = document.getElementById('sys-notify');
   if (!d) {return ;}
-  d.style.cssText = 'z-index:999;position:fixed;width:40%;left:30%;';
+  d.style.cssText = 'z-index:999;position:fixed;width:50%;left:25%;top:0;line-height:1.8rem;padding:0.6rem;text-align:center;';
   if (status == 'ok') {
-    d.style.cssText += 'background-color:#f2f3f5;';
+    d.style.cssText += 'background-color:#efeafd;';
   } else {
-    d.style.cssText += 'background-color:#faf1f2;';
+    d.style.cssText += 'background-color:#e56718;';
   }
   d.innerHTML = data;
   setTimeout(() => {
@@ -208,11 +208,33 @@ var _dm = new function () {
   var self = this;
   this.selectList = function (qstr, t, callback) {
     let nd = document.querySelectorAll(qstr);
+    if (!nd) {return ;}
     for (let i=0; i<nd.length; i++) {
       if (callback(nd[i], t)) {
         nd[i].style.cssText = 'background-color:#a5a2b9;font-weight:bold;';
       } else {
         nd[i].style.cssText = '';
+      }
+    }
+  };
+
+  this.selected = function (qstr, val = null, html = false) {
+    let nd = document.querySelector(qstr);
+    if (!nd) {return;}
+    if (val === null || val === undefined) {
+      let r = nd.options[nd.selectedIndex];
+      return {
+        value : r.value,
+        html : r.innerHTML
+      };
+    } else {
+      let tmp = '';
+      for (let i=0; i < nd.options.length; i++) {
+        tmp = html ? nd.options[i].innerHTML : nd.options[i].value;
+        if (tmp == val) {
+          nd.options[i].selected = true;
+          return i;
+        }
       }
     }
   };
