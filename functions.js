@@ -111,3 +111,15 @@ exports.formatTime = function (t = null, fmt = 'long') {
     
     return `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()} ${t.getHours()}:${t.getMinutes()}:${t.getSeconds()}`;
 };
+
+exports.timestr = function () {
+  let t = new Date();
+  let year = t.getFullYear();
+  let month = t.getMonth()+1;
+  let day = t.getDate();
+  let hour = t.getHours();
+  let min = t.getMinutes();
+  let sec = t.getSeconds();
+
+  return `${year}-${month > 9 ? '' : '0'}${month}-${day > 9 ? '' : '0'}${day}_${hour > 9 ? '' : '0'}${hour}-${min > 9 ? '' : '0'}${min}-${sec > 9 ? '' : '0'}${sec}`;
+};

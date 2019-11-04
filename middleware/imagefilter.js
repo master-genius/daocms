@@ -8,6 +8,12 @@ module.exports = async (c, next) => {
     c.res.body = c.service.api.ret('EUDEF', '图片超过限制大小');
     return ;
   }
-  
+
+  let ctypes = ['image/jpeg', 'image/png', 'image/gif'];
+  if (ctypes.indexOf(f['content-type']) < 0) {
+    c.res.body = c.service.api.ret('EUDEF', '支持.jpg, .png, .gif格式图片');
+    return ;
+  }
+
   await next(c);
 };

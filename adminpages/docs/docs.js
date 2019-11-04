@@ -22,6 +22,7 @@ async function getDoc (id) {
 async function neDoc (id = null) {
   if (id === null) {
     showEditDoc();
+    loadCache();
   } else {
     try {
       let d = await getDoc(id);
@@ -80,13 +81,11 @@ function showEditDoc(nd = null) {
 
 var _editor = null;
 function initEditor (html = '') {
-  if (_editor !== null) {
-    console.log('already init');
-    _editor.txt.html(html);
-    return ;
+  if (_editor === null) {
+    var E = window.wangEditor;
+    _editor = new E('#editor-menu', '#editor-block');
   }
-  var E = window.wangEditor;
-  _editor = new E('#editor-menu', '#editor-block');
+  
   _editor.customConfig.uploadImgMaxLength = 1;
   _editor.customConfig.zIndex = 0;
   _editor.customConfig.onchangeTimeout  = 1500;
@@ -101,26 +100,19 @@ function initEditor (html = '') {
       let postdata = new FormData();
       postdata.append('image', files[i]);
 
-      fetch('/api/image?id='+cid, {
-          mode : 'cors',
-          body : postdata,
-          method : 'POST'
+      userApiCall('/image/', {
+        method : 'POST',
+        body : postdata
       })
-      .then(res => {
-          return res.json();
-      }, err => {
-          throw err;
+      .then(d => {
+        if (d.status === 'OK') {
+          insert(`/image/${d.data.path}/${d.data.name}`);
+        } else {
+          sysnotify(d.errmsg, 'err');
+        }
       })
-      .then(ret => {
-          if (ret.status == 'ok') {
-              insert(ret.url);
-              getContentImages();
-          } else {
-              timeOutInfo(_updiDom, ret.errmsg);
-          }
-      })
-      .catch(err => {
-          console.log(err);
+      .catch (err => {
+        console.log(err);
       });
     }
   }
@@ -149,4 +141,12 @@ function initEditor (html = '') {
   if (html.length > 0) {
     _editor.txt.html(html);
   }
+}
+
+function loadCache () {
+
+}
+
+function saveContent () {
+
 }

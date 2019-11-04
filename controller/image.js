@@ -102,48 +102,6 @@ class image {
     }
   }
 
-  /**
-   * @param {*} c 
-   * 因为涉及到不同用户的权限，所以对于图片的管理则不能笼统的不做区分，这样会导致管理混乱。
-   * 只有root用户可以查看并管理所有图片。
-   * 要区分用户很简单，只需要按照用户名或id等唯一标识进行目录创建即可，
-   * 如果此用户不存在了，这些资源要有一个合理的安排，简单的、不耦合的情况就是交给root用户管理。
-   */
-  async create (c) {
-    let imgfile = c.getFile('image');
-    let imgname = `${c.service.funcs.timestr()}_${c.box.user.id.substring(0,4)}`;
-    let tpre = this.typepre[ imgfile['content-type'] ];
-    
-    imgname = `${tpre}${imgname}${this.typeext[ imgfile['content-type'] ]}`;
-
-    let subpath = c.box.user.id.substring(0,8);
-    let imgdir = `${c.service.imagepath}/${subpath}`;
-    try {
-      fs.accessSync(imgdir, fs.constants.F_OK);
-    } catch (err) {
-      fs.mkdirSync(imgdir);
-    }
-
-    try {
-        let r = await c.moveFile(imgfile, {
-          filename: imgname,
-          path : imgdir
-        });
-        c.res.body = c.service.api.ret(0, {name : imgname, path : subpath});
-    } catch (err) {
-        c.res.body = c.service.api.ret('EUDEF', err.message);
-    }
-  }
-
-  __mid () {
-    return [
-      {
-        name : 'imagefilter',
-        path : ['create']
-      }
-    ];
-  }
-
 }
 
 module.exports = image;
