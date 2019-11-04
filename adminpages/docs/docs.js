@@ -21,6 +21,8 @@ async function getDoc (id) {
 
 async function neDoc (id = null) {
   if (id === null) {
+    wo.set('edit-id', 'null');
+    wo.set('edit-status', 'on');
     showEditDoc();
     loadCache();
   } else {
@@ -29,6 +31,8 @@ async function neDoc (id = null) {
       if (d === false) {
         return ;
       }
+      wo.set('edit-id', id);
+      wo.set('edit-status', 'on');
       showEditDoc(d);
     } catch (err){
       return ;
@@ -54,7 +58,7 @@ function showEditDoc(nd = null) {
   var dochtml = `
   <div class="grid-x">
     <div class="cell small-12 medium-8 large-6" style="text-align:center;">
-      <a href="javascript:unsyscover();"><h1>X</h1></a>
+      <a href="javascript:offEdit();"><h1>X</h1></a>
     </div>
   </div>
 
@@ -77,6 +81,11 @@ function showEditDoc(nd = null) {
   </div>`;
   syscover(dochtml);
   initEditor(d.content);
+}
+
+function offEdit() {
+  unsyscover();
+  wo.set('edit-status', 'off');
 }
 
 var _editor = null;
@@ -150,3 +159,10 @@ function loadCache () {
 function saveContent () {
 
 }
+
+window.onload = function () {
+  if (wo.get('edit-status') === 'on') {
+    let id = wo.get('edit-id');
+    neDoc(id === 'null' ? null : id);
+  }
+};
