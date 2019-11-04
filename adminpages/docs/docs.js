@@ -92,7 +92,7 @@ function initEditor (html = '') {
   _editor.customConfig.onchangeTimeout  = 1500;
 
   _editor.customConfig.onchange= function(html) {
-    setContent();
+    saveContent();
   }
 
   _editor.customConfig.customUploadImg = function (files, insert) {

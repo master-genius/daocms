@@ -41,6 +41,9 @@ if (cluster.isWorker) {
   app.service.alog = {
     failed : {},
   };
+
+  app.service.imagepath = __dirname + '/../images';
+  app.service.funcs = funcs;
 }
 
 if (cluster.isWorker) {

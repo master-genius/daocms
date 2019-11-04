@@ -36,7 +36,8 @@ class adminlogin {
       token : token,
       user  : {
         username  : u.username,
-        role      : u.role
+        role      : u.role,
+        expires   : expires,
       }
     });
   }

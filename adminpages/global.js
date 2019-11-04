@@ -310,6 +310,7 @@ function setAdminInfo () {
 function logout() {
     localStorage.removeItem('session');
     localStorage.removeItem('userinfo');
+    localStorage.removeItem('sessiontime')
     location.href="/adminpage/login";
 }
 
