@@ -57,8 +57,9 @@ function showEditDoc(nd = null) {
   }
   var dochtml = `
   <div class="grid-x">
-    <div class="cell small-12 medium-8 large-6" style="text-align:center;">
-      <a href="javascript:offEdit();"><h1>X</h1></a>
+    <div class="cell small-9 medium-8 large-8"></div>
+    <div class="cell small-3 medium-4 large-4" style="text-align:center;">
+      <a href="javascript:offEdit();"><h3>X</h3></a>
     </div>
   </div>
 
@@ -75,6 +76,7 @@ function showEditDoc(nd = null) {
             <div id="editor-block" class="editor-block" style="height:30rem;width:100%;border-left:solid 0.06rem #696969;border-bottom:dashed 0.06rem #696969;" spellcheck="false" onkeydown="return mdKeyDown(this, event);" onkeyup="return mdKeyUp(this, event);"></div>
           </div>
         </div>
+        <input type="submit" value="保存" class="button secondary small" onclick="postContent();">
       </form>
     </div>
     <div class="cell medium-3 large-4 hide-for-small-only"></div>
@@ -97,7 +99,7 @@ function initEditor (html = '') {
   
   _editor.customConfig.uploadImgMaxLength = 1;
   _editor.customConfig.zIndex = 0;
-  _editor.customConfig.onchangeTimeout  = 1500;
+  _editor.customConfig.onchangeTimeout  = 800;
 
   _editor.customConfig.onchange= function(html) {
     saveContent();
@@ -153,11 +155,27 @@ function initEditor (html = '') {
 }
 
 function loadCache () {
-
+  let cont = wo.get('doc-cache', true);
+  try {
+    document.getElementById('doc-title').value = cont.title,
+    _editor.txt.html(cont.content)
+  } catch (err){}
 }
 
 function saveContent () {
+  let cont = {
+    title : document.getElementById('doc-title').value.trim(),
+    content : _editor.txt.html()
+  };
+  wo.set('doc-cache', cont, true);
+}
 
+function postContent () {
+  let cont = {
+    title : document.getElementById('doc-title').value.trim(),
+    content : _editor.txt.html(),
+    is_public : 
+  }
 }
 
 window.onload = function () {

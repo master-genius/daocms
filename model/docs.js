@@ -146,10 +146,10 @@ docs.prototype.post = async function (data) {
     keywords : '',
     adminid : '',
     adminname : '',
-    doctype : '',
-    ctype : '',
-    is_public : '',
-    gid : '',
+    doctype : 'rich-text',
+    ctype : 'news',
+    is_public : 0,
+    gid : 0,
   };
 
   for (let k in nd) {

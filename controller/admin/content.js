@@ -70,6 +70,15 @@ class content {
     }
   }
 
+  __mid () {
+    return [
+      {
+        name : 'docfilter',
+        path : ['create', 'content']
+      }
+    ];
+  }
+
 }
 
 module.exports = content;

@@ -95,7 +95,7 @@ class image {
   }
 
   async list (c) {
-    if (c.box.user.role === 'root') {
+    if (c.box.user.role === 'root' || c.box.user.role === 'super') {
       c.res.body = this.loadImages(c, true);
     } else {
       c.res.body = this.loadImages(c);
