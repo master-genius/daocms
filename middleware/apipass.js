@@ -1,32 +1,12 @@
 module.exports = async (c, next) => {
-    c.res.body = {
-        status: 4003,
-        errmsg: 'permission deny'
-    };
-    if (c.query.pass) {
-        if (c.query.pass !== 'linuslinux') {      
-            return ;
-        }
-    } else if (c.query.token && c.query.key) {
-        let h = c.service.crypto.createHash('md5');
-        h.update(c.query.key + 'linuslinux');
-        if (h.digest('hex') !== c.query.token) {
-            return ;
-        }
-    } else {
+  c.res.body = c.service.api.ret('EPERMDENY');
+  if (c.query.apitoken && c.query.key) {
+    let h = c.service.funcs.md5(`${c.query.key}${c.service.apikey}`);
+      if (h !== c.query.apitoken) {
         return ;
-    }
-    await next(c);
+      }
+  } else {
+    return ;
+  }
+  await next(c);
 };
-
-/* module.exports = async (c, next) => {
-    if (!c.query.pass || c.query.pass !== 'linuslinux') {
-        c.res.body = {
-            status: 4003,
-            errmsg: 'permission deny'
-        };
-        return ;
-    }
-    await next(c);
-};
- */

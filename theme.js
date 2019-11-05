@@ -12,7 +12,7 @@ class theme {
   constructor (options) {
     this.path = options.path; //主题目录
     this.name = options.name; //主题文件目录名称
-    //this.themepath = `${this.path}/${this.name}`;
+    this.themepath = `${this.path}/${this.name}`;
     this.siteinfo = options.siteinfo;
   }
 
@@ -50,13 +50,14 @@ class theme {
     }
   }
 
-  setTheme(name) {
+  setTheme(tname) {
     var oldname = this.name;
     var oldt = this.t;
     try {
-      this.name = name;
+      this.name = tname;
       this.load();
     } catch (err) {
+      console.log(err);
       console.log('切换主题错误，设置回之前的主题');
       this.t = oldt;
       this.name = oldname;

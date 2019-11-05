@@ -5,4 +5,5 @@ module.exports = {
   adminapi : '/admin',
   port : 2022,
   host : '0.0.0.0',
+  apikey : 'bu-xiang-shei-dou-ke-yi-diao-yong', //API调用的key
 };

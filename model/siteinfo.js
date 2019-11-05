@@ -59,7 +59,7 @@ class siteinfo {
 
   async setall (dobj) {
     for (let k in dobj) {
-      this.setinfo(dobj[k], k);
+      await this.setinfo(dobj[k], k);
     }
   }
 

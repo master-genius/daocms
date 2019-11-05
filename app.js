@@ -114,18 +114,6 @@ if (cluster.isWorker) {
     }
   }, '@page-static');
 
-  app.get('/p/:name', async c => {
-    try {
-      c.res.body = c.service.theme.find(c.param.name);
-      if (c.res.body === null) {
-        c.res.body = c.service.theme.find('404');
-        c.status(404);
-      }
-    } catch (err) {
-      c.status (404);
-    }
-  }, '@page-static');
-
   app.get('/', async c => {
     c.res.body = c.service.theme.find('home');
   }, '@page-static');
@@ -195,31 +183,21 @@ if (cluster.isWorker) {
         c.status(404);
     }
   }, '@page-static');
-}
 
-if (cluster.isWorker) {
-  var _apikey = {
-    token       : '',
-    key         : '',
-    createTime  : 0,
-  };
-
-  var makeApiKey = function () {
-    let h = crypto.createHash('md5');
-    _apikey.key = `dj_${parseInt(Math.random()*100000)}`;
-    h.update(_apikey.key+'linuslinux');
-    _apikey.token = h.digest('hex');
-    _apikey.createTime = Date.now();
-  };
-
-  makeApiKey();
-  setInterval(() => {
-    makeApiKey();
-  }, 3600000);
-
-  app.router.get('/page-apikey', async c => {
-    c.res.body = _apikey;
-  });
+  //如果你要去掉page，也是可以的，但是要保证此路由放在最后，也就是当前位置，
+  //在此之前已经把所有的路由都加载完毕，否则如果是/:name则会影响其他路由的查找。
+  app.get('/page/:name', async c => {
+    try {
+      c.res.body = c.service.theme.find(c.param.name);
+      c.setHeader('cache-control', 'public,max-age=86400');
+      if (c.res.body === null) {
+        c.res.body = c.service.theme.find('404');
+        c.status(404);
+      }
+    } catch (err) {
+      c.status (404);
+    }
+  }, '@page-static');
 }
 
 if (process.argv.indexOf('-d') > 0) {
@@ -228,3 +206,30 @@ if (process.argv.indexOf('-d') > 0) {
 }
 
 app.daemon(cfg.port, cfg.host);
+
+/* 
+if (cluster.isWorker) {
+  var _apikey = {
+    token       : '',
+    key         : '',
+    createTime  : 0,
+  };
+
+  app.service.apikey = cfg.apikey;
+  var makeApiKey = function () {
+    let h = crypto.createHash('md5');
+    _apikey.key = `dj_${parseInt(Math.random()*100000)}`;
+    h.update(_apikey.key + app.service.apikey);
+    _apikey.token = h.digest('hex');
+    _apikey.createTime = Date.now();
+  };
+
+  makeApiKey();
+  setInterval(() => {
+    makeApiKey();
+  }, 600000);
+
+  app.router.get('/page-apikey', async c => {
+    c.res.body = _apikey;
+  });
+} */

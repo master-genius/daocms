@@ -10,7 +10,7 @@ class site {
   async create (c) {
     try {
       c.body = JSON.parse(c.body);
-      c.service.siteinfo.setall(c.body);
+      await c.service.siteinfo.setall(c.body);
       c.service.siteinfo.noticeUpdate();
       if (c.body.theme !== undefined) {
         c.service.siteinfo.noticeChangeTheme();
