@@ -214,7 +214,7 @@ function renderMenu (ml) {
   let d = document.getElementById('menu');
   if (!d) {return ;}
   _dm.renderList(d, ml, (m) => {
-    return `<li><a href="/page/show?id=${m.id}">${m.title}</a></li>`;
+    return `<a href="/page/show?id=${m.id}" class="button">${m.title}</a>`;
   }, true);
 }
 

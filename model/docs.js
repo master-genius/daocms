@@ -135,7 +135,7 @@ docs.prototype.adoclist = async function (args = {}) {
 };
 
 docs.prototype.get = async function (id) {
-  let sql = 'SELECT id,content,tags,keywords,updatetime,doctype,ctype FROM docs WHERE id=$1 AND is_public=1 AND is_hidden=1';
+  let sql = 'SELECT id,title,content,tags,keywords,updatetime,doctype,ctype FROM docs WHERE id=$1 AND is_public=1 AND is_hidden=0 AND is_delete=0';
 
   let ret = await this.db.query(sql, [
     id
