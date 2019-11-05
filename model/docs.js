@@ -117,7 +117,7 @@ docs.prototype.doclist = async function (args = {}) {
 
   let sql = 'SELECT id,title,keywords,addtime,updatetime,doctype,ctype FROM docs ';
 
-  sql += r.cond + ' AND is_public=1 AND is_hidden=1 ' 
+  sql += r.cond + ' AND is_public=1 AND is_hidden=0 ' 
       + ' ORDER BY updatetime DESC ' + r.limit;
 
   let ret = await this.db.query(sql);
@@ -188,11 +188,11 @@ docs.prototype.post = async function (data) {
   nd.id = this.genid();
   nd.addtime = nd.updatetime = funcs.formatTime(null, 'middle');
 
-  let sql = 'INSERT INTO docs (id, title, content, keywords, doctype, adminid, ctype, is_public, addtime, updatetime, tags) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, $10, $11)';
+  let sql = 'INSERT INTO docs (id, title, content, keywords, doctype, adminid, adminname, ctype, is_public, addtime, updatetime, tags) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, $10, $11, $12)';
 
   let args = [
     nd.id, nd.title, nd.content, nd.keywords, nd.doctype, nd.adminid, 
-    nd.ctype, nd.is_public, nd.addtime, nd.updatetime, nd.tags
+    nd.adminname, nd.ctype, nd.is_public, nd.addtime, nd.updatetime, nd.tags
   ];
 
   let ret = await this.db.query(sql, args);

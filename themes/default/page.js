@@ -1,8 +1,11 @@
-const fs = require('fs');
-
-class apage {
+class page {
 
   constructor (options = {}) {
+    this.fs = options.fs;
+    this.si = options.siteinfo;
+    this.funcs = options.funcs;
+    this.path = options.path;
+
     this.pi = {
       globalcss : '',
       initjs : '',
@@ -19,18 +22,9 @@ class apage {
     };
 
     this.pageCache = {};
-
-    for (let k in this.pi) {
-      if (options[k] !== undefined) {
-        this.pi[k] = options[k];
-      }
-      delete options[k];
-    }
-
-    this.path = options.path;
   }
 
-  init (pages) {
+  init () {
     let gjs = '';
     let gcss = '';
     try {
@@ -42,15 +36,13 @@ class apage {
     } catch (err){}
     this.pi.globalcss = gcss;
     this.pi.globaljs = gjs;
+    let pages = this.fs.readdirSync(this.path+'/pages');
     this.loadpage(pages);
   }
 
-  setinfo (options) {
-    for (let k in options) {
-      if (this.pi[k] !== undefined) {
-        this.pi[k] = options[k];
-      }
-    }
+  reload (si) {
+    this.si = si;
+    this.init();
   }
 
   resetpi () {
@@ -62,7 +54,7 @@ class apage {
 
   loadpage(pages) {
     for (let i=0; i<pages.length; i++) {
-      this.initpage(this.path, pages[i]);
+      this.initpage(this.path+'/pages', pages[i]);
     }
   }
 
@@ -71,8 +63,8 @@ class apage {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width,height=device-height">
-        <title>${p.title}</title>
-        <link href="/static/css/foundation.min.css" rel="stylesheet">
+        <title>${this.si.title}</title>
+        <link href="/static/css/pure-min.css" rel="stylesheet">
         ${p.header}
         <style>
           ${p.globalcss}
@@ -84,28 +76,28 @@ class apage {
         </script>
       </head>
       <body>
-        <div class="full-container">
-          <div class="grid-x">
-          <div class="cell small-3 medium-3 large-2" style="padding:0.4rem;line-height:2.2rem;text-align:center;background:#f2f1f9;">
-            DocDao
-          </div>
-          <div class="cell small-9 medium-9 large-10" style="text-align:center;line-height:2.2rem;border-bottom:solid 0.06rem #eaeaef;padding:0.5rem;background:#dfdfe9;">
-            ${p.topinfo}
-          </div>
-          </div>
-        </div>
-        <div class="full-container" id="main">
-          <div class="grid-x">
-            <div class="cell small-3 medium-3 large-2">
-              <div id="admin-info" style="padding:0.2rem;"></div>
-              ${p.menu}
+        <div class="pure-g">
+          <div class="pure-u-1-12"></div>
+          <div class="pure-u-9-12">
+            <div class="pure-menu pure-menu-horizontal">
+              <a href="/" class="pure-menu-heading pure-menu-link">首页</a>
+              <ul class="pure-menu-list">
+                <li class="pure-menu-item">
+                  <a href="/p/about" class="pure-menu-link">关于</a>
+                </li>
+              </ul>
             </div>
-            <div class="cell small-9 medium-9 large-10">
+          </div>
+          <div class="pure-u-5-12"></div>
+        </div>
+        
+        <div class="pure-g" id="main">
+            <div class="pure-u-1">
               ${p.main}
             </div>
-          </div>
         </div>
-        <div class="full-container">
+
+        <div class="pure-g">
           ${p.footer}
         </div>
         <div id="sys-notify"></div>
@@ -139,69 +131,6 @@ class apage {
     return html;
   }
 
-  loginpage (p) {
-    return `<!DOCTYPE html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width,height=device-height">
-        <title>${p.title}</title>
-        <link href="https://cdn.bootcss.com/foundation/6.5.3/css/foundation.min.css" rel="stylesheet">
-        ${p.header}
-        <style>
-          ${p.globalcss}
-          ${p.css}
-        </style>
-      </head>
-      <body>
-        <div class="full-container">
-          <div class="grid-x">
-            <div class="cell small-12" style="padding:0.4rem;line-height:2.2rem;text-align:center;background:#f2f1f9;">
-              ${p.sitename} - 管理员登录
-            </div>
-          </div>
-        </div>
-
-        <div class="full-container" id="main">
-          <div class="grid-x">
-            <div class="cell small-1 medium-3 large-4"></div>
-            <div class="cell small-10 medium-6 large-4">
-              ${p.main}
-            </div>
-            <div class="cell small-1 medium-3 large-4"></div>
-          </div>
-        </div>
-
-        <div class="full-container">
-          ${p.footer}
-        </div>
-        <div id="sys-notify"></div>
-        <script>
-          ${p.js}
-        </script>
-        <script>
-          function setMainSize() {
-            let d = document.getElementById('main');
-            if (d) {
-              d.style.minHeight = document.documentElement.clientHeight * 0.85 + 'px';
-            }
-          }
-          if (typeof window.onresize === 'function') {
-              let _wrz = window.onresize;
-              window.onresize = function () {
-                  setMainSize();
-                  _wrz();
-              };
-          } else {
-            window.onresize = function () {
-              setMainSize();
-            };
-          }
-          setMainSize();
-        </script>
-      </body>
-    </html>`;
-  }
-
   initpage (pdir, pname) {
     let headerfile = `${pdir}/${pname}/header.html`;
     let htmlfile = `${pdir}/${pname}/${pname}.html`;
@@ -211,26 +140,26 @@ class apage {
     this.resetpi();
 
     try {
-      fs.accessSync(headerfile, fs.constants.F_OK);
+      this.fs.accessSync(headerfile, this.fs.constants.F_OK);
       this.pi.header = fs.readFileSync(headerfile, {encoding:'utf8'});
     } catch (err) {}
 
     try {
-      fs.accessSync(htmlfile, fs.constants.F_OK);
-      this.pi.main = fs.readFileSync(htmlfile, {encoding:'utf8'});
+      this.fs.accessSync(htmlfile, this.fs.constants.F_OK);
+      this.pi.main = this.fs.readFileSync(htmlfile, {encoding:'utf8'});
     } catch (err) {
       console.log(err);
     }
 
     try {
-      fs.accessSync(cssfile, fs.constants.F_OK);
+      this.fs.accessSync(cssfile, this.fs.constants.F_OK);
       this.pi.css = fs.readFileSync(cssfile, {encoding:'utf8'});
     } catch (err) {
       //console.log(err);
     }
 
     try {
-      fs.accessSync(jsfile, fs.constants.F_OK);
+      this.fs.accessSync(jsfile, this.fs.constants.F_OK);
       this.pi.js = fs.readFileSync(jsfile, {encoding:'utf8'});
     } catch (err) {
       //console.log(err);
@@ -316,4 +245,4 @@ class apage {
 
 }
 
-module.exports = apage;
+module.exports = page;

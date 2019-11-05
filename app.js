@@ -6,6 +6,7 @@ const cfg = require('./config');
 const dbcfg = require('./dbconfig');
 const docs = require('./model/docs');
 const admin = require('./model/admin');
+const siteinfo = require('./model/siteinfo');
 const usertoken = require('./user');
 const api = require('./api');
 const crypto = require('crypto');
@@ -13,6 +14,7 @@ const page = require('./apage');
 const fs = require('fs');
 const cms = require('./cms');
 const funcs = require('./functions');
+const theme = require('./theme');
 
 var app = new titbit ({
   debug : true,
@@ -34,12 +36,6 @@ if (cluster.isWorker) {
   app.service.adminkey = cfg.adminkey;
   app.service.user = usertoken;
 
-  //用于管理员账户的记录功能，至于其中如何记录数据则交给具体请求，
-  //此处仅仅是提供了一个请求内全局可用的对象。
-  app.service.alog = {
-    failed : {},
-  };
-
   app.service.imagepath = __dirname + '/../images';
   app.service.funcs = funcs;
 
@@ -50,49 +46,62 @@ if (cluster.isWorker) {
   let tb = new tbload();
   tb.init(app);
 
-  let siteinfo = {
-    sitename : '',
-    footer : '',
-    title : '',
-    theme : 'default'
-  };
-
-  try {
-    siteinfo.title = fs.readFileSync('./siteinfo/title', {encoding:'utf8'});
-    siteinfo.theme = fs.readFileSync('./siteinfo/theme', {encoding:'utf8'});
-    siteinfo.sitename = fs.readFileSync('./siteinfo/sitename', {encoding:'utf8'});
-  } catch (err) {
-    console.log(err.message);
-  }
-
-  let gjs = '';
-  let gcss = '';
-  try {
-    gjs = fs.readFileSync('./adminpages/global.js', {encoding:'utf8'});
-    gcss = fs.readFileSync('./adminpages/global.css', {encoding:'utf8'});
-  } catch(err){}
-
-  let adminpage = new page({
-    title : siteinfo.title,
-    sitename : siteinfo.sitename,
-    topinfo: cms.topinfo,
+  app.service.siteinfo = new siteinfo({
+    path : __dirname + '/siteinfo',
+    watchFile : __dirname + '/watcher/reload-siteinfo',
+    watchTheme :  __dirname + '/watcher/change-theme',
+    themedir : __dirname + '/themes'
+  });
+  app.service.siteinfo.init();
+  var adminpage = new page({
+    path : __dirname + '/adminpages',
+    title : app.service.siteinfo.info.title,
+    sitename : app.service.siteinfo.info.sitename,
+    topinfo: app.service.siteinfo.info.sitename+'管理后台',
     footer : cms.footer,
     menu : cms.menu,
-    globaljs : gjs,
-    globalcss : gcss,
-    initjs : `var _apidomain='${cfg.apidomain}:${cfg.port}';var _adminapi='${cfg.adminapi}';\n`,
+    initjs : `var _apidomain='${cfg.apidomain}:${cfg.port}';`
+              +`var _adminapi='${cfg.adminapi}';\n`,
   });
 
   app.service.adminpage = adminpage;
-  app.service.siteinfo = siteinfo;
-
-  adminpage.initpage('./adminpages', 'home');
-  adminpage.initpage('./adminpages', 'login');
-  adminpage.initpage('./adminpages', 'admin');
-  adminpage.initpage('./adminpages', 'site');
-  adminpage.initpage('./adminpages', 'docs');
+  adminpage.init(['home','login','admin','site','docs']);
   adminpage.page40x();
 
+  app.service.theme = new theme({
+    path : __dirname + '/themes',
+    name : app.service.siteinfo.info.theme,
+    siteinfo : app.service.siteinfo.info,
+  });
+
+  try {
+    app.service.theme.load();
+  } catch (err) {
+    console.log(err);
+  }
+
+  fs.watch('./watcher', (evt, name) => {
+    if (name === 'reload-siteinfo') {
+      app.service.siteinfo.reload();
+      adminpage.setinfo({
+        title : app.service.siteinfo.info.title,
+        sitename : app.service.siteinfo.info.sitename,
+        topinfo: app.service.siteinfo.info.sitename+'管理后台',
+      });
+      adminpage.init(['home','login','admin','site','docs']);
+      adminpage.page40x();
+      //console.log(app.service.siteinfo.info);
+      setTimeout(() => {
+        app.service.theme.reload(app.service.siteinfo.info);
+      }, 1000);
+    } else if (name === 'change-theme') {
+      app.service.theme.setTheme(app.service.siteinfo.info.theme);
+    }
+  });
+
+}
+
+if (cluster.isWorker) {
   app.get('/adminpage/:name', async c => {
     try {
       c.res.body = adminpage.find(c.param.name);
@@ -103,6 +112,22 @@ if (cluster.isWorker) {
     } catch (err) {
       c.status (404);
     }
+  }, '@page-static');
+
+  app.get('/p/:name', async c => {
+    try {
+      c.res.body = c.service.theme.find(c.param.name);
+      if (c.res.body === null) {
+        c.res.body = c.service.theme.find('404');
+        c.status(404);
+      }
+    } catch (err) {
+      c.status (404);
+    }
+  }, '@page-static');
+
+  app.get('/', async c => {
+    c.res.body = c.service.theme.find('home');
   }, '@page-static');
 
   var faviconCache = null;
@@ -149,6 +174,27 @@ if (cluster.isWorker) {
     }
   }, '@page-static');
 
+  var _themeStaticCache = {};
+  app.router.get('/theme/*', async c => {
+    if (c.param.starPath.indexOf('.css') > 0) {
+        c.setHeader('content-type', 'text/css; charset=utf-8');
+    } else if (c.param.starPath.indexOf('.js') > 0) {
+        c.setHeader('content-type', 'text/javascript; charset=utf-8');
+    }
+    if (_themeStaticCache[c.param.starPath] !== undefined) {
+      c.setHeader('cache-control', 'public,max-age=86400');
+      c.res.body = _themeStaticCache[c.param.starPath];
+      return ;
+    }
+    try {
+      c.setHeader('cache-control', 'public,max-age=86400');
+      c.res.body = await funcs.readFile(
+          `./themes/${c.service.siteinfo.info.theme}/${c.param.starPath}`);
+      _themeStaticCache[c.param.starPath] = c.res.body;
+    } catch (err) {
+        c.status(404);
+    }
+  }, '@page-static');
 }
 
 if (cluster.isWorker) {

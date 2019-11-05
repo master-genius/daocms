@@ -3,7 +3,7 @@ var _total = 0;
 var _curpage = 1;
 
 function totalPage (t, p) {
-  return (t % p === 0) ? (t/p) : (parseInt(t/p)+1);
+  return (t % p == 0) ? (t/p) : (parseInt(t/p)+1);
 }
 
 async function getDoc (id) {
@@ -240,9 +240,12 @@ function postContent () {
   })
   .then(d => {
     if (d.status === 'OK') {
-      sysnotify(d.status + ' ' + d.data);
+      sysnotify(d.status);
       wo.set('edit-id', d.data);
       wo.set('off-remove', '1');
+      if (method === 'POST') {
+        docList();
+      }
     } else {
       sysnotify(d.errmsg, 'err');
     }
@@ -261,6 +264,7 @@ function docTemp (d) {
     <p><a href="javascript:neDoc('${d.id}');"><img src="/siteimage/edit.png" style="width:auto;height:auto;">
     <span style="font-size:105%;">${d.title}</span></a></p>
     <div>状态：${d.is_public ? '已发布' : '未发布'}</div>
+    <div>作者：${d.adminname}</div>
     <div>${d.updatetime.substring(0,10)}</div>
     <input type="checkbox" value="${d.id}" class="doc-list-cell">
     </div>

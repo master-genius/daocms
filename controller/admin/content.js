@@ -32,6 +32,7 @@ class content {
    */
   async create (c) {
     c.body.adminid = c.box.user.id;
+    c.body.adminname = c.box.user.username;
     let data = await c.service.docs.post(c.body);
     if (data === false) {
       c.res.body = c.service.api.ret('EUEF', 'failed create doc');
