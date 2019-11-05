@@ -13,18 +13,14 @@ class admin {
   }
 
   async list (c) {
-    c.res.body = c.service.api.ret(0, c.service.admin.list());
+    c.res.body = c.service.api.ret(0, await c.service.admin.list());
   }
 
   async create (c) {
     let r = await c.service.admin.create(c.body);
-    if (r === -1) {
-      c.res.body = c.service.api.ret('EUDEF', '用户已存在');
-      return ;
-    }
 
     if (r === false) {
-      c.res.body = c.service.api.ret('EWRONG');
+      c.res.body = c.service.api.ret('EUDEF', '创建管理员失败，请检查是否已存在');
       return ;
     }
 

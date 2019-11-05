@@ -11,7 +11,7 @@ var docs = function (db) {
   };
 };
 
-docs.prototype.parseCond = function (args, uid = null) {
+docs.prototype.parseCond = function (args) {
 
   let offset = 0;
   let pagesize = 12;
@@ -34,9 +34,14 @@ docs.prototype.parseCond = function (args, uid = null) {
     if (offset < 0) {offset = 0;}
   }
 
-  let gid = null;
+  /* let gid = null;
   if (args.gid !== undefined && !isNaN(args.gid)) {
     gid = args.gid;
+  } */
+
+  let tag = null;
+  if (args.tag !== undefined) {
+    tag = args.tag.trim().replace(/[\;\+\-]+/ig, '');
   }
 
   let isdel = null;
@@ -49,25 +54,32 @@ docs.prototype.parseCond = function (args, uid = null) {
   if (kwd !== null) {
     condsql += ` (title ILIKE '${kwd}' OR keywords ILIKE '${kwd}') `;
   }
-  if (gid !== null) {
+  if (tag !== null  ) {
     if (kwd !== null) {
       condsql += ` AND `;
     }
-    condsql += ` gid LIKE '%${gid}%' `;
+    condsql += ` gid ILIKE '%${tag}%' `;
   }
 
   if (isdel !== null) {
-    if (kwd || gid) {
+    if (kwd || tag) {
       condsql += ' AND ';
     }
-    condsql += ` is_delete=${isdel}`;
+    condsql += ` is_delete=${isdel} `;
   }
 
-  if (uid !== null) {
+  if (args.uid !== undefined && args.uid !== null) {
     if (condsql.length > 0) {
       condsql += ' AND ';
     }
-    condsql += ` adminname=${uid}`;
+    condsql += ` adminid='${args.uid}' `;
+  }
+
+  if (args.type !== undefined) {
+    if (condsql.length > 0) {
+      condsql += ' AND ';
+    }
+    condsql += ` ctype='${args.type.replace(/[\;]+/ig,'')}' `;
   }
 
   if (condsql.length > 0) {
@@ -80,8 +92,23 @@ docs.prototype.parseCond = function (args, uid = null) {
   };
 };
 
+docs.prototype.insql = (idlist) => {
+  let idsql = '(';
+  for (let i=0; i<idlist.length; i++) {
+    idsql += `'${idlist[i]}',`;
+  }
+  return (idsql.substring(0, idsql.length-1) + ')');
+};
+
 docs.prototype.count = async function (args = {}) {
-  let r = this.parseCond
+  let sql = 'SELECT count(*) as total FROM docs ';
+  sql  += this.parseCond(args).cond;
+
+  let r = await this.db.query(sql);
+  if (r.rowCount <= 0) {
+    return 0;
+  }
+  return r.rows[0].total;
 };
 
 docs.prototype.doclist = async function (args = {}) {
@@ -107,7 +134,6 @@ docs.prototype.adoclist = async function (args = {}) {
   return ret.rows;
 };
 
-
 docs.prototype.get = async function (id) {
   let sql = 'SELECT id,content,tags,keywords,updatetime,doctype,ctype FROM docs WHERE id=$1 AND is_public=1 AND is_hidden=1';
 
@@ -127,7 +153,7 @@ docs.prototype.aget = async function (id, uid=null) {
   let a = [id];
 
   if (uid !== null) {
-    sql += ' AND adminname=$2';
+    sql += ' AND adminid=$2';
     a.push(uid);
   }
 
@@ -150,6 +176,7 @@ docs.prototype.post = async function (data) {
     ctype : 'news',
     is_public : 0,
     gid : 0,
+    tags : ''
   };
 
   for (let k in nd) {
@@ -161,11 +188,11 @@ docs.prototype.post = async function (data) {
   nd.id = this.genid();
   nd.addtime = nd.updatetime = funcs.formatTime(null, 'middle');
 
-  let sql = 'INSERT INTO docs (id, title, content, keywords, doctype, adminname, ctype, is_public, addtime, updatetime, gid) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, $10, $11)';
+  let sql = 'INSERT INTO docs (id, title, content, keywords, doctype, adminid, ctype, is_public, addtime, updatetime, tags) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, $10, $11)';
 
   let args = [
-    nd.id, nd.title, nd.content, nd.keywords, nd.doctype, nd.adminname, 
-    nd.ctype, nd.is_public, nd.addtime, nd.updatetime, nd.gid
+    nd.id, nd.title, nd.content, nd.keywords, nd.doctype, nd.adminid, 
+    nd.ctype, nd.is_public, nd.addtime, nd.updatetime, nd.tags
   ];
 
   let ret = await this.db.query(sql, args);
@@ -185,7 +212,7 @@ docs.prototype.remove = async function (id, uid = null, soft = true) {
   let a = [id];
   if (uid) {
     a.push(uid);
-    sql += ' AND adminname=$2';
+    sql += ' AND adminid=$2';
   }
   let ret = await this.db.query(sql, a);
   if (ret.rowCount <= 0) {
@@ -208,25 +235,25 @@ docs.prototype.removeAll = async function (idlist, uid=null, soft = true) {
   sql += idsql;
 
   if (uid) {
-    sql += ' AND adminname=' + uid;
+    sql += ' AND adminid=' + uid;
   }
-
+  console.log(sql);
   let ret = await this.db.query(sql);
   return ret.rowCount;
 };
 
 docs.prototype.update = async function (data, uid = null) {
-  let sql = 'UPDATE docs SET title=$1,content=$2,keywords=$3,is_public=$4,updatetime=$5,gid=$6 WHERE id=$7';
+  let sql = 'UPDATE docs SET title=$1,content=$2,keywords=$3,tags=$4,is_public=$5,updatetime=$6 WHERE id=$7';
   let a = [
-    data.title, data.content, data.keywords,data.is_public, 
-    funcs.formatTime(null, 'middle'), data.id, data.gid
+    data.title, data.content, data.keywords,data.tags,
+    data.is_public, funcs.formatTime(null, 'middle'), data.id
   ];
   if (uid !== null) {
     a.push(uid);
-    sql += ' AND adminname=$8';
+    sql += ' AND adminid=$8';
   }
 
-  let ret = await this.db.query(sql, args);
+  let ret = await this.db.query(sql, a);
   if (ret.rowCount <= 0) {
     return false;
   }
@@ -243,7 +270,20 @@ docs.prototype.setPublic = async function (idlist, stat = 1, uid = null) {
   sql += idsql;
   let a = [stat];
   if (uid) {
-    sql += ' AND adminname=$2';
+    sql += ' AND adminid=$2';
+    a.push(uid);
+  }
+  let ret = await this.db.query(sql, a);
+  return ret.rowCount;
+};
+
+docs.prototype.setHidden = async function (idlist, stat = 1, uid = null) {
+  let sql = 'UPDATE set is_hidden=$1 WHERE id IN ';
+  let idsql = this.insql(idlist);
+  sql += idsql;
+  let a = [stat];
+  if (uid) {
+    sql += ' AND adminid=$2';
     a.push(uid);
   }
   let ret = await this.db.query(sql, a);

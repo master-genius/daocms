@@ -193,7 +193,7 @@ function sysnotify (data, status = 'ok', timeout = 4500) {
 function syscover (data) {
   let d = document.getElementById('sys-cover');
   if (!d) {return ;}
-  d.style.cssText = 'z-index:99;position:fixed;width:100%;height:100%;background-color:#fefeff;top:0;left:0;';
+  d.style.cssText = 'z-index:99;position:fixed;width:100%;height:100%;background-color:#fefeff;top:0;left:0;overflow:auto;';
   d.innerHTML = data;
   document.body.style.overflow = 'hidden';
 }
@@ -218,6 +218,22 @@ var _dm = new function () {
         nd[i].style.cssText = '';
       }
     }
+  };
+
+  this.getSelect = function(qstr, reverse = false, attr = null) {
+    let stat = !reverse;
+    var tmpcell = [];
+    let nds = document.querySelectorAll(qstr);
+    for (let i=0;i<nds.length; i++) {
+      if (nds[i].checked === stat) {
+        if (attr !== null) {
+          tmpcell.push(nds[i][attr]);
+        } else {
+          tmpcell.push(nds[i]);
+        }
+      }
+    }
+    return tmpcell;
   };
 
   this.selected = function (qstr, val = null, html = false) {
@@ -269,6 +285,23 @@ var _dm = new function () {
     d.innerHTML = '';
     d.style.cssText = '';
   };
+
+  this.renderList = function (m, dl, tempcall, attach = false) {
+    let html = '';
+    try {
+      for(let i=0; i<dl.length; i++) {
+        html += tempcall(dl[i]);
+      }
+      if (attach) {
+        m.innerHTML += html;
+      } else {
+        m.innerHTML = html;
+      }
+    } catch (err) {
+      return false;
+    }
+    
+  }
 };
 
 var _user = {};

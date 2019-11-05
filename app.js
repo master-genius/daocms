@@ -27,9 +27,7 @@ if (cluster.isWorker) {
   var _pgdb = new pg.Pool(dbcfg);
   app.service.pool = _pgdb;
 
-  app.service.admin = new admin({
-    path : __dirname + '/admin'
-  });
+  app.service.admin = new admin(_pgdb);
 
   app.service.docs = new docs(_pgdb);
   app.service.api = new api();
@@ -44,6 +42,8 @@ if (cluster.isWorker) {
 
   app.service.imagepath = __dirname + '/../images';
   app.service.funcs = funcs;
+
+  app.service.siteimgpath = __dirname + '/images';
 }
 
 if (cluster.isWorker) {
@@ -63,7 +63,7 @@ if (cluster.isWorker) {
     siteinfo.sitename = fs.readFileSync('./siteinfo/sitename', {encoding:'utf8'});
   } catch (err) {
     console.log(err.message);
-  } 
+  }
 
   let gjs = '';
   let gcss = '';
@@ -143,6 +143,7 @@ if (cluster.isWorker) {
     }
     try {
         c.res.body = await loadStatic(c.param.starPath);
+        c.setHeader('cache-control', 'public,max-age=86400');
     } catch (err) {
         c.status(404);
     }

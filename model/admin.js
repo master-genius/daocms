@@ -5,80 +5,42 @@
 const funcs = require('../functions');
 const fs = require('fs');
 
-var admin = function (options) {
+var admin = function (db) {
   if (!(this instanceof admin)) {
-    return new admin(options);
+    return new admin(db);
   }
 
-  this.path = options.path;
+  this.db = db;
+  this.aid = function (pstr = '') {
+    let pre = `${Date.now()}${Math.random()}${pstr}`;
+    return funcs.sha1(pre);
+  };
 
-  this.adminTable = {};
-  this.adminList = {};
+  this.hashPass = function (p, s) {
+    return funcs.sha512(`${p}${s}`);
+  }
 
   this.roles = [
     'root', 'super', 'inspector', 'editer'
   ];
-
-  this.copyToList = (u) => {
-    let cu = {};
-    for (let k in u) {
-      if (k === 'passwd' || k === 'salt') {
-        continue;
-      }
-      cu[k] = u[k];
-    }
-    this.adminList[u.username] = cu;
-  };
-
-  this.parseAdmin = (fname) => {
-    try {
-      let u = JSON.parse(
-                fs.readFileSync(`${this.path}/${fname}`, {encoding:"utf8"})
-              );
-      //console.log(u, fname);
-      if (u.username + '.json' !== fname) {
-        throw new Error('文件和用户不一致');
-      }
-      //运行时服务，用于登录失败计数。
-      u.failed = 0;
-      u.failedTime = 0;
-      this.adminTable[u.username] = u;
-      this.copyToList(u);
-    } catch (err) {
-      console.log(err.message);
-    }
-  };
-
-  try {
-    let ulist = fs.readdirSync(this.path, {withFileTypes:true});
-    for (let i=0; i<ulist.length; i++) {
-      if (!ulist[i].isFile() || ulist[i].name.length < 6) {
-        continue;
-      }
-      if (ulist[i].name.substring(ulist[i].name.length-5) !== '.json') {
-        continue;
-      }
-      this.parseAdmin(ulist[i].name);
-    }
-  } catch (err) {
-    console.log(err);
-  }
   
 };
 
-admin.prototype.aid = function (a = '') {
-  return funcs.sha1(`${Date.now()}${a}${Math.random()}`);
-};
-
-admin.prototype.get = function (username) {
-  if (this.adminTable[username] === undefined) {
+admin.prototype.get = async function (username) {
+  let sql = 'SELECT * FROM admin WHERE username=$1';
+  let r = await this.db.query(sql, [
+    username
+  ]);
+  if (r.rowCount <= 0) {
     return null;
   }
-  return this.adminTable[username];
+  return r.rows[0];
 };
 
-admin.prototype.list = function () {
-  return this.adminList;
+admin.prototype.list = async function () {
+  let sql = 'SELECT id,username,email,role FROM admin';
+  let r = await this.db.query(sql);
+  return r.rows;
 };
 
 /**
@@ -86,106 +48,81 @@ admin.prototype.list = function () {
  */
 
 admin.prototype.create = async function (u) {
-  let fname = `${this.path}/${u.username}.json`;
-  try {
-    fs.accessSync(fname, fs.constants.F_OK);
-    return -1;
-  } catch (err) {}
+  let sql = 'INSERT INTO admin (id, username, passwd, email, salt, role) '
+    +' VALUES ($1,$2, $3,$4,$5, $6);';
 
-  if (u.role === undefined) {
-    u.role = 'editor';
-  }
+  let id = this.aid();
+  let salt = funcs.makeSalt();
+  let passwd = funcs.sha512(`${u.passwd}${salt}`);
+  let a = [
+    id, u.username, passwd, u.email, salt, u.role
+  ];
 
-  try {
-    u.salt = funcs.makeSalt();
-    u.passwd = funcs.sha512(`${u.passwd}${u.salt}`);
-    u.id = this.aid(u.username);
-    await funcs.writeFile(fname, JSON.stringify(u));
-    this.adminTable[u.username] = u;
-    this.copyToList(u);
-    return u.id;
-  } catch (err) {
+  let r = await this.db.query(sql, a);
+  if (r.rowCount <= 0) {
     return false;
   }
+  return id;
 };
 
-admin.prototype.delete = async function (username) {
-  if (username === 'root') {
+admin.prototype.delete = async function (id) {
+  let sql = 'DELETE FROM admin WHERE id=$1';
+  let r = await this.db.query(sql, [
+    id
+  ]);
+  if (r.rowCount <= 0) {
     return false;
   }
-  let fname = `${this.path}/${u.username}.json`;
-  try {
-    fs.accessSync(fname, fs.constants.F_OK);
-  } catch (err) {
-    return true;
-  }
-
-  try {
-    let r = await new Promise((rv, rj) => {
-      fs.unlink(fname, err => {
-        if (err) { rj(err); }
-        else { rv(true); }
-      });
-    });
-    delete this.adminTable[username];
-    delete this.adminList[username];
-    return true;
-  } catch (err) {
-    return false;
-  }
-
+  return true;
 };
 
-admin.prototype.forbid = function (username) {
+admin.prototype.update = async function (u) {
+  let sql = 'UPDATE admin SET ';
+  let a = [];
+  var i=1;
+  for (let k in u) {
+    if (k === 'id' || k === 'salt' || k === 'passwd') {continue;}
+    sql += `${k}=$${i},`;
+    i+=1;
+    a.push(u[k]);
+  }
 
+  a.push(u.id);
+  sql = `${sql.substring(0, sql.length-1)} WHERE id=$${i}`;
+
+  let r = await this.db.query(sql, a);
+  if (r.rowCount <= 0) {
+    return false;
+  }
+  return true;
 };
 
-admin.prototype.setRole = async function (username, role) {
-  let u = this.get(username);
-  if (u === null) {
+admin.prototype.setPasswd = async function (id, passwd) {
+  let sql = 'UPDATE admin SET passwd=$1,salt=$2 WHERE id=$3';
+  let salt = funcs.makeSalt();
+  let npass = this.hashPass(passwd, salt);
+  let r = await this.db.query(sql, [
+    npass, salt, id
+  ]);
+
+  if (r.rowCount <= 0) {
     return false;
   }
-  if (this.roles.indexOf(role) < 0) {
-    return false;
-  }
-  if (u.role === 'root') {
-    return false;
-  }
+  return true;
+};
+
+admin.prototype.verifyPasswd = async function (username, passwd) {
   
-  u.role = role;
-  try {
-    await fs.writeFile(`${this.path}/${username}.json`, JSON.stringify(u));
-  } catch (err) {
+  let sql = 'SELECT id,username,passwd,salt FROM admin WHERE username=$1';
+  let u = await this.db.query(sql, [username]);
+  if (u.rowCount <= 0) {
     return false;
   }
-  return true;
-};
-
-admin.prototype.setPasswd = async function (username, passwd) {
-  let u = this.get(username);
-  if (u === null) {
-    return false;
+  let npass = this.hashPass(passwd, u.rows[0].salt);
+  if (npass === u.rows[0].passwd) {
+    return true;
   }
-
-  u.passwd = funcs.sha512(`${passwd}${u.salt}`);
-  try {
-    await fs.writeFile(`${this.path}/${username}.json`, JSON.stringify(u));
-  } catch (err) {
-    return false;
-  }
-  return true;
-};
-
-admin.prototype.verifyPasswd = function (username, passwd) {
-  let u = this.adminTable[username];
-  if (u === undefined) {
-    return false;
-  }
-
-  if (funcs.sha512(`${passwd}${u.salt}`) !== u.passwd) {
-    return false;
-  }
-  return true;
+  return false;
 };
 
 module.exports = admin;

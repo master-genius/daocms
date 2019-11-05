@@ -2,6 +2,10 @@ var _pagesize = 12;
 var _total = 0;
 var _curpage = 1;
 
+function totalPage (t, p) {
+  return (t % p === 0) ? (t/p) : (parseInt(t/p)+1);
+}
+
 async function getDoc (id) {
   _dm.loading();
   return userApiCall('/content/'+id).then(d => {
@@ -21,10 +25,12 @@ async function getDoc (id) {
 
 async function neDoc (id = null) {
   if (id === null) {
+    if (wo.get('edit-id') !== 'null' && wo.get('edit-id') !== null) {
+      clearCache();
+    }
     wo.set('edit-id', 'null');
     wo.set('edit-status', 'on');
-    showEditDoc();
-    loadCache();
+    showEditDoc(loadCache());
   } else {
     try {
       let d = await getDoc(id);
@@ -51,13 +57,15 @@ function showEditDoc(nd = null) {
     addtime : '',
     updatetime : '',
     gid : '',
+    tags : ''
   };
   if (nd !== null) {
     d = nd;
   }
   var dochtml = `
   <div class="grid-x">
-    <div class="cell small-9 medium-8 large-8"></div>
+    <div class="cell small-9 medium-8 large-8" style="text-align:center;padding:0.4rem;line-height:2.4rem;">
+      ${nd ? ('编辑：'+nd.title) : '新文档'}</div>
     <div class="cell small-3 medium-4 large-4" style="text-align:center;">
       <a href="javascript:offEdit();"><h3>X</h3></a>
     </div>
@@ -68,7 +76,9 @@ function showEditDoc(nd = null) {
     <div class="cell medium-1 large-1 hide-for-small-only"></div>
     <div class="cell small-12 medium-8 large-7">
       <form onsubmit="return false;">
-        <input type="text" id="doc-title" value="${d.title}">
+        <div style="padding-left:0.2rem;padding-right:0.4rem;">
+          <input type="text" id="doc-title" value="${d.title}" placeholder="标题" onchange="saveContent()">
+        </div>
         <div id="content-editor" style="padding-left:0.2rem;padding-right:0.2rem;">
           <div id="editor-zone">
             <div id="editor-menu" class="editor-menu" style="margin-bottom: 0.5rem;border-left:solid 0.06rem #696969;background:#efedf5;"></div>
@@ -76,7 +86,28 @@ function showEditDoc(nd = null) {
             <div id="editor-block" class="editor-block" style="height:30rem;width:100%;border-left:solid 0.06rem #696969;border-bottom:dashed 0.06rem #696969;" spellcheck="false" onkeydown="return mdKeyDown(this, event);" onkeyup="return mdKeyUp(this, event);"></div>
           </div>
         </div>
-        <input type="submit" value="保存" class="button secondary small" onclick="postContent();">
+        <div class="grid-x" style="padding:0.5rem;line-height:2.5rem;">
+          <div class="cell small-4 medium-4 large-3">
+            <label>类型</label>
+            <select id="c-type" onchange="saveContent()">
+              <option value="news" ${nd ? (nd.ctype === 'news' ? 'selected' :'') : ''}>文档</option>
+              <option value="company" ${nd ? (nd.ctype === 'company' ? 'selected' :'') : ''}>页面</option>
+            </select>
+          </div>
+          <div class="cell small-8 medium-8 large-9" style="padding-left:0.2rem;">
+            <label>关键词</label>
+            <input type="text" value="${d.keywords}" id="doc-keywords" onchange="saveContent()">
+          </div>
+          <div class="cell small-12">
+            <label>标签</label>
+            <input type="text" value="${d.tags}" id="doc-tags" placeholder="标签可以用于扁平化分组，并可以灵活的扩展功能和业务需求" onchange="saveContent()">
+          </div>
+        </div>
+        
+        &nbsp;&nbsp;<input type="checkbox" value="1" id="is-public" onchange="saveContent()" ${nd ? (nd.is_public ? 'checked' : '') : ''}>发布<br><br>
+        <div style="text-align:center;">
+          <input type="submit" value="保存" class="button secondary small" onclick="postContent();" id="post-btn">
+        </div>
       </form>
     </div>
     <div class="cell medium-3 large-4 hide-for-small-only"></div>
@@ -88,6 +119,11 @@ function showEditDoc(nd = null) {
 function offEdit() {
   unsyscover();
   wo.set('edit-status', 'off');
+  if (wo.get('off-remove') == '1') {
+    clearCache();
+    wo.remove('off-remove');
+  }
+  wo.remove('edit-id');
 }
 
 var _editor = null;
@@ -129,24 +165,24 @@ function initEditor (html = '') {
   }
 
   _editor.customConfig.menus = [
-      'head',  // 标题
-      'bold',  // 粗体
-      'fontSize',  // 字号
-      'fontName',  // 字体
-      'italic',  // 斜体
-      'underline',  // 下划线
-      'strikeThrough',  // 删除线
-      'foreColor',  // 文字颜色
-      'backColor',  // 背景颜色
-      'link',  // 插入链接
-      'list',  // 列表
-      'justify',  // 对齐方式
-      'quote',  // 引用
-      'image',  // 插入图片
-      'table',  // 表格
-      'code',  // 插入代码
-      'undo',  // 撤销
-      'redo'  // 重复
+      'head',
+      'bold',
+      'fontSize',
+      'fontName',
+      'italic',
+      'underline',
+      'strikeThrough',
+      'foreColor',
+      'backColor',
+      'link',
+      'list',
+      'justify',
+      'quote',
+      'image',
+      'table',
+      'code',
+      'undo',
+      'redo'
   ];
   _editor.create();
   if (html.length > 0) {
@@ -156,31 +192,227 @@ function initEditor (html = '') {
 
 function loadCache () {
   let cont = wo.get('doc-cache', true);
-  try {
-    document.getElementById('doc-title').value = cont.title,
-    _editor.txt.html(cont.content)
-  } catch (err){}
+  return cont;
+}
+
+function clearCache() {
+  wo.remove('doc-cache');
+  wo.remove('edit-id');
+}
+
+function getEditDoc () {
+  let cont = {
+    title : document.getElementById('doc-title').value.trim(),
+    content : _editor.txt.html(),
+    is_public : document.getElementById('is-public').checked ? 1 : 0,
+    ctype : _dm.selected('#c-type').value,
+    tags : document.getElementById('doc-tags').value,
+    keywords : document.getElementById('doc-keywords').value
+  };
+  return cont;
 }
 
 function saveContent () {
-  let cont = {
-    title : document.getElementById('doc-title').value.trim(),
-    content : _editor.txt.html()
-  };
+  let cont = getEditDoc();
   wo.set('doc-cache', cont, true);
 }
 
 function postContent () {
-  let cont = {
-    title : document.getElementById('doc-title').value.trim(),
-    content : _editor.txt.html(),
-    is_public : 
+  let cont = getEditDoc();
+  let id = wo.get('edit-id');
+  let apiname = '/content';
+  let method = 'POST';
+  if (id !== 'null' && id !== null) {
+    cont.id = id;
+    apiname += '/'+id;
+    method = 'PUT';
   }
+  let pbtn = document.getElementById('post-btn');
+  if (pbtn) {pbtn.disabled = true;}
+  _dm.loading();
+  userApiCall(apiname, {
+    method : method,
+    mode : 'cors',
+    headers : {
+      'content-type' : 'text/plain'
+    },
+    body : JSON.stringify(cont)
+  })
+  .then(d => {
+    if (d.status === 'OK') {
+      sysnotify(d.status + ' ' + d.data);
+      wo.set('edit-id', d.data);
+      wo.set('off-remove', '1');
+    } else {
+      sysnotify(d.errmsg, 'err');
+    }
+  })
+  .catch (err => {
+    console.log(err);
+  }).finally(() => {
+    if (pbtn) {pbtn.disabled = false;}
+    _dm.unloading();
+  });
 }
 
-window.onload = function () {
+function docTemp (d) {
+  return `<div class="small-12 medium-6 large-4 doc-list">
+    <div class="doc-list-content">
+    <p><a href="javascript:neDoc('${d.id}');"><img src="/siteimage/edit.png" style="width:auto;height:auto;">
+    <span style="font-size:105%;">${d.title}</span></a></p>
+    <div>状态：${d.is_public ? '已发布' : '未发布'}</div>
+    <div>${d.updatetime.substring(0,10)}</div>
+    <input type="checkbox" value="${d.id}" class="doc-list-cell">
+    </div>
+  </div>`;
+}
+
+if (wo.get('doc-list-init') === null) {
+  wo.set('doc-list-init', '1');
+  wo.set('kwd', '');
+  wo.set('cur-page', '1');
+  wo.set('total-page', '1');
+  wo.set('c-type', '--all--');
+}
+
+function docList () {
+  let page = parseInt(wo.get('cur-page'));
+  let kwd = wo.get('kwd');
+  let ctype = wo.get('c-type');
+  //let total_page = parseInt(wo.get('total-page'));
+
+  let qstr = `?offset=${(page-1)*_pagesize}&kwd=${encodeURIComponent(kwd)}`;
+  if (ctype !== '--all--') {
+    qstr += `&type=${encodeURIComponent(ctype)}`;
+  }
+
+  userApiCall('/content'+qstr).then(d => {
+    _dm.renderList(document.getElementById('doc-list'), d.data, docTemp);
+    document.body.scrollTop = 0;
+  })
+  .catch (err => {
+    sysnotify(err.message, 'err');
+  });
+}
+
+async function docCount () {
+  return userApiCall('/count').then(d => {
+    return parseInt(d.data);
+  })
+  .catch(err => {
+    sysnotify(err.message, 'err');
+  });
+}
+
+window.onload = async function () {
+  if (wo.get('kwd')) {
+    document.getElementById('doc-kwd').value = wo.get('kwd');
+  }
+  _dm.selected('#c-type-select', wo.get('c-type'));
+
+  _pagi.pageTemp('#pagination');
+  _pagi.pageEvent(function(p) {
+    wo.set('cur-page', p);
+    docList();
+  });
+  _total = await docCount();
+  let pages = totalPage(_total, _pagesize);
+  _pagi.setpi(1, pages);
   if (wo.get('edit-status') === 'on') {
     let id = wo.get('edit-id');
     neDoc(id === 'null' ? null : id);
   }
+  docList();
 };
+
+var _ctrl_start = false;
+    
+function mdKeyDown(t, event) {
+  if (event.key == 'Tab') {
+    return false;
+  }
+
+  if (event.key === 'Control') {
+    _ctrl_start = true;
+    return false;
+  }
+  else {
+    if (!_ctrl_start) {
+        return true;
+    }
+    switch (event.key) {
+      case 's':
+        postContent();
+        return false;
+        
+      default: 
+        return true;
+    }
+    return false;
+  }
+  return true;
+}
+
+function mdKeyUp(t, event) {
+  if (event.key === 'Control') {
+    _ctrl_start = false;
+  }
+}
+
+function selectAllDoc(t) {
+  let stat = t.checked;
+  let nds = document.querySelectorAll('.doc-list-cell');
+  for(let i=0;i<nds.length;i++) {
+    nds[i].checked = stat;
+  }
+}
+
+function softDeleteSelect() {
+  let nds = _dm.getSelect('.doc-list-cell', false, 'value');
+  userApiCall('/content/a', {
+    method : 'DELETE',
+    header : {
+      'content-type' : 'text/plain'
+    },
+    body : JSON.stringify(nds)
+  })
+  .then(async d => {
+    if (d.status === 'OK') {
+      let page = parseInt(wo.get('cur-page'));
+      let t = await docCount();
+      let total_page = totalPage(t, _pagesize);
+      if (page > total_page) {
+        page = total_page;
+        wo.set('cur-page', page);
+        _pagi.setpi(total_page, page);
+      }
+      docList();      
+    } else {
+      sysnotify(d.errmsg);
+    }
+  })
+  .catch(err => {
+    sysnotify(err.message, 'err');
+  });
+}
+
+function ctypeSearch(t) {
+  let r = t.options[t.selectedIndex];
+  wo.set('c-type', r.value);
+  wo.set('cur-page', 1);
+  docList();
+}
+
+function searchList() {
+  let kwd = document.getElementById('doc-kwd').value.trim();
+  wo.set('cur-page', '1');
+  wo.set('kwd', kwd);
+  docList();
+}
+
+function clearSearch() {
+  document.getElementById('doc-kwd').value = '';
+  wo.set('cur-page', '1');
+  wo.set('kwd', '');
+  docList();
+}

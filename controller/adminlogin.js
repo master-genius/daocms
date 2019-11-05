@@ -7,7 +7,7 @@ class adminlogin {
     let username = c.body.username;
     let passwd = c.body.passwd;
 
-    let u = c.service.admin.get(username);
+    let u = await c.service.admin.get(username);
     if (u === null) {
       c.res.body = c.service.api.ret('EPERMDENY');
       return ;
@@ -15,7 +15,7 @@ class adminlogin {
 
     //检测是否超过最大登录次数限制
 
-    let r = c.service.admin.verifyPasswd(username, passwd);
+    let r = await c.service.admin.verifyPasswd(username, passwd);
     if (r === false) {
       c.res.body = c.service.api.ret('EPERMDENY');
       return ;

@@ -5,7 +5,7 @@ class content {
   }
 
   async get (c) {
-    let uid = c.box.user.role === 'root' ? null : c.box.user.username;
+    let uid = c.box.user.role === 'root' ? null : c.box.user.id;
     let data = await c.service.docs.aget(c.param.id, uid);
     if (data === null) {
       c.res.body = c.service.api.ret('ENOTFD');
@@ -18,8 +18,9 @@ class content {
     if (c.box.user.role === 'root') {
       c.query.uid = null;
     } else {
-      c.query.uid = c.box.user.role;
+      c.query.uid = c.box.user.id;
     }
+    c.query.isdel = 0;
     let data = await c.service.docs.adoclist(c.query);
     c.res.body = c.service.api.ret(0, data);
   }
@@ -30,6 +31,7 @@ class content {
    * c.body是已经过滤处理完毕的数据。
    */
   async create (c) {
+    c.body.adminid = c.box.user.id;
     let data = await c.service.docs.post(c.body);
     if (data === false) {
       c.res.body = c.service.api.ret('EUEF', 'failed create doc');
@@ -45,7 +47,7 @@ class content {
    */
   async delete (c) {
     let idlist = c.body;
-    let uid = c.box.user.role === 'root' ? null : c.box.user.username;
+    let uid = c.box.user.role === 'root' ? null : c.box.user.id;
     let soft = true;
     if (c.query.soft !== undefined) {
       soft = c.query.soft;
@@ -60,7 +62,7 @@ class content {
    * c.body 中的数据在中间件中已经过滤处理完毕。
    */
   async update (c) {
-    let uid = c.box.user.role === 'root' ? null : c.box.user.username;
+    let uid = c.box.user.role === 'root' ? null : c.box.user.id;
     c.body.id = c.param.id;
     let data = await c.service.docs.update(c.body, uid);
     if (data) {
@@ -74,7 +76,7 @@ class content {
     return [
       {
         name : 'docfilter',
-        path : ['create', 'content']
+        path : ['create', 'update', 'delete']
       }
     ];
   }
