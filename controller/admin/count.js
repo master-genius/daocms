@@ -4,7 +4,7 @@ class count {
   }
 
   async callback (c) {
-    if (c.box.user.role !== 'root') {
+    if (c.box.user.role !== 'root' && c.box.user.role !== 'super') {
       c.query.uid = c.box.user.id;
     }
     if (c.query.isdel === undefined) {

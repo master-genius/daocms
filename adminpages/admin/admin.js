@@ -1,13 +1,14 @@
 var user_preg = /^[a-z][a-z0-9\-\_]{4,30}$/i;
-var email_preg = /^[a-z1-9][a-z0-9\-\_]{4,30}\@[\w\d\.]+$/i;
+var email_preg = /^[a-z1-9][a-z0-9\-\_]{3,42}\@[\w\d\.]+$/i;
 var pass_preg = /^[a-z0-9\-\_\.\!\@\#\$\%\^\&\*]{7,20}$/i;
 var weak_preg1 = /^[a-z0-9]{7,20}$/i;
 var weak_preg2 = /^[0-9]{7,20}$/i;
 var _adm = document.getElementById('admin-list');
+var _adminList = [];
 
 function adminTemp(d, u) {
-  let op = `<a href="javascript:editAdmin('${d.username}');">编辑</a> &nbsp; &nbsp;
-  <a href="javascript:delAdmin('${d.username}');" style="color:#491810;">删除</a>`;
+  let op = `<a href="javascript:showEditAdmin('${d.username}');">编辑</a> &nbsp; &nbsp;
+  <a href="javascript:deleteAdmin('${d.id}');" style="color:#491810;">删除</a>`;
   if (d.username === u.username) {
     op = '<p class="help-text">[当前用户]</p>';
   }
@@ -75,9 +76,7 @@ function createAdmin (t) {
   });
 }
 
-var _adminList = {};
-window.onload = function () {
-  let u = getUser();
+function getAdminList () {
   _dm.loading();
   userApiCall('/admin').then(d => {
     if (d.status === 'OK') {
@@ -89,4 +88,104 @@ window.onload = function () {
   }).finally(() => {
     _dm.unloading();
   });
+}
+
+window.onload = function () {
+  getAdminList();
 };
+
+function showEditAdmin(username) {
+  var u = null;
+  for(let i=0;i<_adminList.length;i++) {
+    if (username === _adminList[i].username) {
+      u = _adminList[i];
+    }
+  }
+  if (u === null) {return;}
+  let html = `
+    <div class="grid-x">
+      <div class="cell small-5 medium-3 large-2"></div>
+      <div class="cell small-4 medium-6 large-6"></div>
+      <div class="cell small-3 medium-3 large-2">
+        <a href="javascript:cancelEditAdmin();"><h3>X</h3></a>
+      </div>
+    </div>
+  <div class="grid-x">
+    <div class="cell small-1 medium-2 large-3"></div>
+    <div class="cell small-10 medium-8 large-6">
+      <p>${u.username}</p>
+      <form onsubmit="return false;">
+        <label>角色</label>
+        <select onchange="cacheEditAdmin(this, 'role');">
+          <option value="editor" ${u.role == 'editor' ? 'selected' : ''}>编辑</option>
+          <option value="super"  ${u.role == 'super' ? 'selected' : ''}>管理员</option>
+        </select>
+
+        <label>邮箱</label>
+        <input type="text" value="${u.email}" oninput="cacheEditAdmin(this, 'email');">
+
+        <label>新密码</label>
+        <input type="text" value="" oninput="cacheEditAdmin(this, 'passwd');">
+
+        <input type="submit" class="button hollow secondary" value="设置" onclick="updateAdmin(this, '${u.id}');">
+      </form>
+    </div>
+    <div class="cell small-1 medium-2 large-3"></div>
+  </div>`;
+  syscover(html);
+}
+
+var _saveAdmin = {};
+function cacheEditAdmin(t, k) {
+  if (k === 'passwd' && pass_preg.test(t.value)) {
+    _saveAdmin.passwd = t.value;
+  } else if (k === 'email' && email_preg.test(t.value)) {
+    _saveAdmin.email = t.value;
+  } else if (k === 'role') {
+    _saveAdmin.role = t.options[t.selectedIndex].value;
+  }
+}
+
+function updateAdmin (t, aid) {
+  if (Object.keys(_saveAdmin).length <= 0) {
+    return ;
+  }
+  t.disabled = true;
+  return userApiCall('/admin/'+aid, {
+    method : 'PUT',
+    headers : {
+      'content-type' : 'text/plain'
+    },
+    body : JSON.stringify(_saveAdmin)
+  }).then(d => {
+
+  }).catch(err => {
+
+  }).finally(() => {
+    t.disabled = false;
+  });
+}
+
+function deleteAdmin(aid) {
+  if (!confirm('删除以后，管理员账户就不存在，是否继续？')) {
+    return ;
+  }
+  return userApiCall('/admin/'+aid,{
+    method : 'DELETE',
+  }).then(d => {
+    if (d.status == 'OK') {
+      sysnotify('OK');
+      getAdminList();
+    } else {
+      sysnotify(d.errmsg, 'err');
+    }
+  })
+  .catch(err => {
+    sysnotify(err.message, 'err');
+  });
+}
+
+function cancelEditAdmin() {
+  _saveAdmin = {};
+  unsyscover();
+}

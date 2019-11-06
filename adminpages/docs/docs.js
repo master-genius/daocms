@@ -373,7 +373,10 @@ function selectAllDoc(t) {
 
 function softDeleteSelect() {
   let nds = _dm.getSelect('.doc-list-cell', false, 'value');
-  userApiCall('/content/a', {
+  if (nds.length == 0) {
+    return ;
+  }
+  userApiCall('/content/a?soft=0', {
     method : 'DELETE',
     header : {
       'content-type' : 'text/plain'
@@ -388,7 +391,7 @@ function softDeleteSelect() {
       if (page > total_page) {
         page = total_page;
         wo.set('cur-page', page);
-        _pagi.setpi(total_page, page);
+        _pagi.setpi(page, total_page);
       }
       docList();      
     } else {
