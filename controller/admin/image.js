@@ -31,15 +31,18 @@ class image {
 
     this.loaded = false;
     this.imageList = {};
+
+    //记录删除记录，在操作完成后会清空
+    this.delLog = {};
   }
 
-  loadimgdir (imgdir, cell) {
+  loadimgdir (imgdir, cell, imgpath) {
     let flist = fs.readdirSync(imgdir, {withFileTypes:true});
     for (let i=0; i<flist.length;i++) {
       if (flist[i].isFile() && 
         this.typemap[flist[i].name.substring(0,2)] !== undefined
       ) {
-        cell.push(flist[i].name);
+        cell.push(imgpath+'/'+flist[i].name);
       }
     }
   }
@@ -48,21 +51,24 @@ class image {
     try {
       let cell = [];
       let imgdir = `${c.service.imagepath}`;
+      let imgpath = '';
       if (all === false) {
-        imgdir += `/${c.box.user.id.substring(0,8)}`;
-        this.loadimgdir(imgdir, cell);
+        imgpath = `${c.box.user.id.substring(0,8)}`;
+        this.loadimgdir(`${imgdir}/${imgpath}`, cell, imgpath);
         return cell;
       }
 
-      let dlist = fs.readFileSync(imgdir, {withFileTypes:true});
+      let dlist = fs.readdirSync(imgdir, {withFileTypes:true});
       for(let i=0; i<dlist.length; i++) {
         if (!dlist[i].isDirectory()) {
           continue;
         }
-        this.loadimgdir(`${c.service.imagepath}/${dlist[i].name}`, cell);
+        this.loadimgdir(`${c.service.imagepath}/${dlist[i].name}`, 
+          cell, dlist[i].name);
       }
       return cell;
     } catch (err) {
+      console.log(err);
       return [];
     }
   }
@@ -95,6 +101,7 @@ class image {
   }
 
   async list (c) {
+    c.setHeader('cache-control', 'public,max-age=120');
     if (c.box.user.role === 'root' || c.box.user.role === 'super') {
       c.res.body = this.loadImages(c, true);
     } else {
@@ -132,6 +139,64 @@ class image {
         c.res.body = c.service.api.ret(0, {name : imgname, path : subpath});
     } catch (err) {
         c.res.body = c.service.api.ret('EUDEF', err.message);
+    }
+  }
+
+  /**
+   * 删除图片的操作属于比较耗时的请求，所以采用异步处理的方式。
+   * 实际并不一定会完全成功，需要前端定时请求并获取结果。
+   */
+  async realDeleteImages (imgpath, imgs, logid, role, uid) {
+    for (let i=0; i<imgs.length; i++) {
+      try {
+        if (role !== 'root' && role !== 'super') {
+          if (!this.checkUser(uid, imgs[i])) {
+            this.delLog[logid][imgs[i]] = 'Error: 无操作权限';
+            continue;
+          }
+        }
+        await new Promise((rv, rj) => {
+          fs.unlink(`${imgpath}/${imgs[i]}`, err => {
+            if (err) {
+              rj(err);
+            } else {
+              rv();
+            }
+          });
+        });
+        this.delLog[logid][imgs[i]] = 'OK';
+      } catch (err) {
+        this.delLog[logid][imgs[i]] = 'Error: 删除失败';
+      }
+    }
+  }
+
+  checkUser(uid, img) {
+    let imgp = img.split('/').filter(p=>p.length>0);
+    if (uid.indexOf(imgp[0]) != 0) {
+      return false;
+    }
+    return true;
+  }
+
+  async delete (c) {
+    ilist = JSON.parse(c.body);
+    let logid = c.service.funcs.sha1(`${Date.now()}${c.box.user.id}`);
+    this.delLog[logid] = {};
+    this.realDeleteImages(c.service.imagepath,
+          ilist, logid, c.box.user.role, c.box.user.id);
+    c.res.body = c.service.api.ret(0, logid);
+  }
+
+  /**
+   * 因为并无更新操作，但是需要一个获取删除图片记录的接口，所以使用了PUT请求
+   */
+  async update (c) {
+    if (this.delLog[c.param.id] !== undefined) {
+      c.res.body = c.service.api.ret(0, this.delLog[c.param.id]);
+      delete this.delLog[c.param.id];
+    } else {
+      c.res.body = c.service.api.ret('ENOTFD');
     }
   }
 

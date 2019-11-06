@@ -213,6 +213,13 @@ var _dm = new function () {
 function renderMenu (ml) {
   let d = document.getElementById('menu');
   if (!d) {return ;}
+  ml.sort((a, b) => {
+    if (a.keywords == b.keywords) {
+      return 0;
+    }
+    return (a.keywords > b.keywords) ? 1 : -1;
+  });
+  
   _dm.renderList(d, ml, (m) => {
     return `<a href="/page/show?id=${m.id}" class="button">${m.title}</a>`;
   }, true);

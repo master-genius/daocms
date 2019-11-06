@@ -85,39 +85,7 @@ function formatTime(fmtstr = '', tim = null) {
 
 }
 
-async function getApiKey () {
-  if (wo.get('api-key')) {
-    let k = wo.get('api-key', true);
-    if (k.createTime + 3600000 > Date.now()) {
-      return k;
-    }
-  }
-  try {
-    await fetch('/page-apikey')
-            .then(res => {
-                return res.json();
-            }, err => {
-                throw err;
-            })
-            .then(data => {
-                _apikey.token = data.token;
-                _apikey.key = data.key;
-                _apikey.createTime = data.createTime;
-            });
-    wo.set('api-key', _apikey, true);
-    return _apikey;
-  } catch (err) {
-      console.log(err);
-  }
-}
-
 async function apiCall (path, options = {}) {
-  /* _apikey = await getApiKey();
-  let q = '?';
-  if (path.indexOf('?') > 0) {
-      q = '&';
-  } */
-  //path += q + 'pass='+_apikey.token + '&key=' + _apikey.key;
   return fetch (_apidomain+ _adminapi + path, options)
           .then(res => {
               if (options.dataType && options.dateType !== 'json') {

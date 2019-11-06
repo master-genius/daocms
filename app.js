@@ -64,8 +64,9 @@ if (cluster.isWorker) {
               +`var _adminapi='${cfg.adminapi}';\n`,
   });
 
+  var admpagelist = ['home','login','admin','site','docs', 'image'];
   app.service.adminpage = adminpage;
-  adminpage.init(['home','login','admin','site','docs']);
+  adminpage.init(admpagelist);
   adminpage.page40x();
 
   app.service.theme = new theme({
@@ -88,7 +89,7 @@ if (cluster.isWorker) {
         sitename : app.service.siteinfo.info.sitename,
         topinfo: app.service.siteinfo.info.sitename+'管理后台',
       });
-      adminpage.init(['home','login','admin','site','docs']);
+      adminpage.init(admpagelist);
       adminpage.page40x();
       //console.log(app.service.siteinfo.info);
       setTimeout(() => {

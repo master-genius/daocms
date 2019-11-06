@@ -3,6 +3,7 @@ module.exports = {
     <li><a href="/adminpage/home" class="admin-menu">首页</a></li>
     <li><a href="/adminpage/admin" class="admin-menu">用户管理</a></li>
     <li><a href="/adminpage/docs" class="admin-menu">文章管理</a></li>
+    <li><a href="/adminpage/image" class="admin-menu">图片管理</a></li>
     <li><a href="/adminpage/site" class="admin-menu">站点设置</a></li>
   </ul>`,
   topinfo : '',
