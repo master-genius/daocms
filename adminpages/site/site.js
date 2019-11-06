@@ -64,10 +64,12 @@ function showEditSiteInfo() {
     <div class="cell small-10 medium-8 large-6">
     <div style="text-align:center;"><a href="javascript:cancelSet();"><h2>X</h2></a></div>
   <form onsubmit="return false;">
-    <label>标题</label>
-    <input type="text" value="${_siteinfo.title}" oninput="cacheInput(this, 'title');">
     <label>名称</label>
     <input type="text" value="${_siteinfo.sitename}" oninput="cacheInput(this, 'sitename');">
+
+    <label>标题</label>
+    <input type="text" value="${_siteinfo.title}" oninput="cacheInput(this, 'title');">
+    
     <label>版权信息</label>
     <input type="text" value="${_siteinfo.copyright}" oninput="cacheInput(this, 'copyright');">
     <label>页面底部</label>

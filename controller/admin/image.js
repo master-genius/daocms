@@ -146,12 +146,13 @@ class image {
    * 删除图片的操作属于比较耗时的请求，所以采用异步处理的方式。
    * 实际并不一定会完全成功，需要前端定时请求并获取结果。
    */
-  async realDeleteImages (imgpath, imgs, logid, role, uid) {
+  async realDeleteImages (imgpath, imgs, role, uid) {
+    let ilog = {};
     for (let i=0; i<imgs.length; i++) {
       try {
         if (role !== 'root' && role !== 'super') {
           if (!this.checkUser(uid, imgs[i])) {
-            this.delLog[logid][imgs[i]] = 'Error: 无操作权限';
+            ilog[imgs[i]] = 'Error: 无操作权限';
             continue;
           }
         }
@@ -164,11 +165,12 @@ class image {
             }
           });
         });
-        this.delLog[logid][imgs[i]] = 'OK';
+        ilog[imgs[i]] = 'OK';
       } catch (err) {
-        this.delLog[logid][imgs[i]] = 'Error: 删除失败';
+        ilog[imgs[i]] = 'Error: 删除失败';
       }
     }
+    return ilog;
   }
 
   checkUser(uid, img) {
@@ -180,25 +182,24 @@ class image {
   }
 
   async delete (c) {
-    ilist = JSON.parse(c.body);
-    let logid = c.service.funcs.sha1(`${Date.now()}${c.box.user.id}`);
-    this.delLog[logid] = {};
-    this.realDeleteImages(c.service.imagepath,
-          ilist, logid, c.box.user.role, c.box.user.id);
-    c.res.body = c.service.api.ret(0, logid);
+    let ilist = JSON.parse(c.body);
+    let ilog = await this.realDeleteImages(c.service.imagepath,
+          ilist, c.box.user.role, c.box.user.id);
+    c.res.body = c.service.api.ret(0, ilog);
   }
 
   /**
    * 因为并无更新操作，但是需要一个获取删除图片记录的接口，所以使用了PUT请求
+   * 此处已弃用
    */
-  async update (c) {
+  /* async update (c) {
     if (this.delLog[c.param.id] !== undefined) {
       c.res.body = c.service.api.ret(0, this.delLog[c.param.id]);
       delete this.delLog[c.param.id];
     } else {
       c.res.body = c.service.api.ret('ENOTFD');
     }
-  }
+  } */
 
   __mid () {
     return [

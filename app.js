@@ -22,7 +22,8 @@ var app = new titbit ({
   useLimit: true,
   maxConn : 1024,
   maxIPRequest: 500,
-  showLoadInfo: false,
+  //showLoadInfo: false,
+  loadInfoFile : '/tmp/loadinfo.log'
 });
 
 if (cluster.isWorker) {

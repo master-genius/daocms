@@ -13,6 +13,7 @@ function renderImageList () {
   if (page > _total_page) {
     page = 1;
     wo.set('img-page', page);
+    _pagi.setpi(page, _total_page);
   }
   
   let offset = (page-1)*_pagesize;
@@ -61,7 +62,10 @@ function deleteSelectImages() {
   if (!confirm('确认删除？')) {
     return ;
   }
-  return userApiCall('/admin/image', {
+  syscover(`<div style="text-align:center;padding:0.8rem;margin-top:3rem;">
+    <h4>delete ···</h4>
+  </div>`);
+  return userApiCall('/image', {
     method : 'DELETE',
     headers : {
       'content-type' : 'text/plain'
@@ -70,10 +74,37 @@ function deleteSelectImages() {
   })
   .then(d => {
     if (d.status === 'OK') {
-      sysnotify('开始删除···');
+      sysnotify('OK');
+    } else {
+      sysnotify(d.errmsg, 'err');
     }
+    getImages();
   })
   .catch(err => {
+    sysnotify(err.message, 'err');
+  })
+  .finally(() => {
+    setTimeout(() => {
+      unsyscover();
+    }, 800);
+  });
+}
+
+function getdelLog(logid) {
+  return userApiCall('/image/'+logid, {
+    method : 'PUT',
+    mode : 'cors',
+    headers : {
+      'content-type' : 'text/plain'
+    },
+    body : logid
+  }).then(d => {
+    if (d.status === 'OK') {
+      sysnotify('删除完成');
+      getImages();
+    }
+  })
+  .catch (err => {
 
   });
 }
