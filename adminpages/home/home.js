@@ -1,8 +1,27 @@
+var roleMap = {
+  'root' : '超级管理员',
+  'super' : '管理员',
+  'editor' : '编辑'
+};
+
+var _info = {
+  cpu : {
+    '1m' : '',
+    '5m' : '',
+    '15m' : ''
+  },
+  pids : [],
+  masterpid : ''
+};
+
 window.onload = function () {
   let u = getUser();
-  document.getElementById('user-role').innerHTML = '用户角色：' + u.role;
+  document.getElementById('user-role').innerHTML = '用户角色：' + roleMap[u.role];
   document.getElementById('siteurl').innerHTML = 
     `<a href="${location.protocol}//${location.host}" target="_blank">进入网站</a>`;
+  if (document.getElementById('loadinfo')) {
+    document.getElementById('loadinfo').innerHTML = fmtLoadInfo(_info);
+  }
   getLoadInfo();
 };
 
@@ -31,7 +50,7 @@ function showLoadInfo (di) {
 }
 
 function parseLoadInfo(di) {
-  let info = {
+  _info = {
     cpu : {
       '1m' : '',
       '5m' : '',
@@ -49,17 +68,17 @@ function parseLoadInfo(di) {
       continue;
     } else if (tmp.indexOf('CPU') == 0) {
       buf = tmp.split('m: ').filter(p => p.length > 0).slice(1);
-      info.cpu['1m'] = buf[0].split(' ')[0];
-      info.cpu['5m'] = buf[1].split(' ')[0];
-      info.cpu['15m'] = buf[2].split(' ')[0];
+      _info.cpu['1m'] = buf[0].split(' ')[0];
+      _info.cpu['5m'] = buf[1].split(' ')[0];
+      _info.cpu['15m'] = buf[2].split(' ')[0];
       continue;
     } else if (tmp.indexOf('Master') == 0) {
-      info.masterpid = tmp.split(':')[1].trim();
+      _info.masterpid = tmp.split(':')[1].trim();
     } else if (tmp.indexOf('Listen') == 0) {
       continue;
     } else {
       buf = tmp.split(' ').filter(p => p.length > 0);
-      info.pids.push({
+      _info.pids.push({
         pid : buf[0],
         cpu : buf[1],
         mem : buf[2].substring(0, buf[2].length-1),
@@ -68,7 +87,7 @@ function parseLoadInfo(di) {
       });
     }
   }
-  return info;
+  return _info;
 }
 
 function fmtCPU(c) {
@@ -96,7 +115,7 @@ function fmtLoadInfo (info) {
   for (let i=0; i < info.pids.length; i++) {
     pidhtml += fmtCPU(info.pids[i]);
   }
-  let html = `<div class="cell small-12 medium-10 large-6" style="padding:0.2rem;">
+  let html = `<div class="cell small-12 medium-5 large-5" style="padding:0.2rem;">
     <h4>系统整体情况</h4>
     <p>1分钟平均进程数：${info.cpu['1m']}</p>
     <p>5分钟平均进程数：${info.cpu['5m']}</p>
@@ -106,7 +125,7 @@ function fmtLoadInfo (info) {
       如果要终止服务，可以连接服务器通过终端终止PID为${info.masterpid}的进程。 
     </p>
   </div>
-  <div class="cell small-12 medium-10 large-6">
+  <div class="cell small-12 medium-7 large-7">
     <h4>进程负载信息</h4>
     ${pidhtml}
   </div>`;

@@ -7,7 +7,9 @@ var _adm = document.getElementById('admin-list');
 var _adminList = [];
 
 function adminTemp(d, u) {
-  let op = `<a href="javascript:showEditAdmin('${d.username}');">编辑</a> &nbsp; &nbsp;
+  let op = `<a href="javascript:showSetPasswd('${d.username}');">安全设置</a>
+  &nbsp;&nbsp;
+  <a href="javascript:showEditAdmin('${d.username}');">编辑</a> &nbsp; &nbsp;
   <a href="javascript:deleteAdmin('${d.id}');" style="color:#491810;">删除</a>`;
   if (d.username === u.username) {
     op = '<p class="help-text">[当前用户]</p>';
@@ -61,7 +63,8 @@ function createAdmin (t) {
     body : JSON.stringify(a)
   }).then(d => {
     if (d.status === 'OK') {
-      _adminList[a.username] = a;
+      a.id = d.data;
+      _adminList.push(a);
       renderAdminList(_adminList);
       document.getElementById('new-username').value = '';
       document.getElementById('new-email').value = '';
@@ -188,4 +191,42 @@ function deleteAdmin(aid) {
 function cancelEditAdmin() {
   _saveAdmin = {};
   unsyscover();
+}
+
+function showSetPasswd(username) {
+  var u = null;
+  for(let i=0;i<_adminList.length;i++) {
+    if (username === _adminList[i].username) {
+      u = _adminList[i];
+    }
+  }
+  if (u === null) {return;}
+
+  var html = `<div class="grid-x">
+      <div class="cell small-5 medium-3 large-2"></div>
+      <div class="cell small-4 medium-6 large-6"></div>
+      <div class="cell small-3 medium-3 large-2">
+        <a href="javascript:unsyscover();"><h3>X</h3></a>
+      </div>
+    </div>
+    <div class="grid-x">
+    <div class="cell small-1 medium-2 large-3"></div>
+    <div class="cell small-10 medium-8 large-6">
+      <p>设置管理员 ${u.username} 的密码</p>
+      <form onsubmit="return false;">
+        <input type="hidden" id="user-id" value="${u.id}">
+        <label>密码验证</label>
+        <input type="password" value="" id="my-passwd" placeholder="当前用户的密码">
+
+        <label>新密码</label>
+        <input type="password" value="" id="new-passwd">
+
+        <label>重复新密码</label>
+        <input type="password" value="" id="re-new-passwd">
+
+        <input type="submit" class="button alert" value="设置" onclick="setAdminPasswd(this);">
+      </form>
+    </div>
+    <div class="cell small-1 medium-2 large-3"></div>`;
+    syscover(html);
 }

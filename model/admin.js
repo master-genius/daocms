@@ -66,7 +66,7 @@ admin.prototype.create = async function (u) {
 };
 
 admin.prototype.delete = async function (id) {
-  let sql = 'DELETE FROM admin WHERE id=$1';
+  let sql = `DELETE FROM admin WHERE id=$1 AND role != 'root'`;
   let r = await this.db.query(sql, [
     id
   ]);
@@ -82,6 +82,7 @@ admin.prototype.update = async function (u) {
   var i=1;
   for (let k in u) {
     if (k === 'id' || k === 'salt' || k === 'passwd') {continue;}
+    
     sql += `${k}=$${i},`;
     i+=1;
     a.push(u[k]);

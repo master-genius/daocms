@@ -37,12 +37,12 @@ class admin {
   }
 
   async update (c) {
-    if (c.box.user.role === 'root') {
+    /* if (c.box.user.role === 'root') {
       if (c.body.username !== undefined || c.body.role !== undefined) {
         c.res.body = c.service.api.ret('EBADDATA');
         return ;
       }
-    }
+    } */
     let r = await c.service.admin.update(c.body);
     if (r) {
       c.res.body = await c.service.api.ret(0);

@@ -4,6 +4,7 @@ const fs = require('fs');
 class loadinfo {
   constructor () {
     this.mode = 'callback';
+    this.method = 'GET';
     this.li = '';
     if (os.platform() !== 'win32') {
       this.getLoadInfo();
