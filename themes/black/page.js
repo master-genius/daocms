@@ -81,21 +81,25 @@ class page {
           <div class="row">
             <div class="col-sm-1 col-md-1 col-lg-2"></div>
             <div class="col-sm-10 col-md-10 col-lg-8">
-              <ul class="menu" id="menu">
-                <li><a href="/">首页</a></li>
-              </ul>
+              <header id="menu">
+                <a href="/" class="button">首页</a>
+              </header>
             </div>
             <div class="col-sm-1 col-md-1 col-lg-2"></div>
           </div>
         </div>
         
-        <div class="pure-g" id="main">
-            <div class="pure-u-1">
+        <div class="container" id="main" style="margin-top:0.5rem;">
+          <div class="row">
+            <div class="col-sm-1 col-md-1 col-lg-2"></div>
+            <div class="col-sm-10 col-md-10 col-lg-8">
               ${p.main}
             </div>
+            <div class="col-sm-1 col-md-1 col-lg-2"></div>
+          </div>
         </div>
 
-        <div class="pure-g">
+        <div class="container">
           ${p.footer}
         </div>
         <div id="sys-notify"></div>
@@ -158,7 +162,7 @@ class page {
 
     try {
       this.fs.accessSync(jsfile, this.fs.constants.F_OK);
-      this.pi.js = fs.readFileSync(jsfile, {encoding:'utf8'});
+      this.pi.js = this.fs.readFileSync(jsfile, {encoding:'utf8'});
     } catch (err) {
       //console.log(err);
     }

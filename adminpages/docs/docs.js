@@ -241,9 +241,9 @@ function postContent () {
   .then(d => {
     if (d.status === 'OK') {
       sysnotify(d.status);
-      wo.set('edit-id', d.data);
       wo.set('off-remove', '1');
       if (method === 'POST') {
+        wo.set('edit-id', d.data);
         docList();
       }
     } else {

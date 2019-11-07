@@ -127,9 +127,6 @@ function showEditAdmin(username) {
         <label>邮箱</label>
         <input type="text" value="${u.email}" oninput="cacheEditAdmin(this, 'email');">
 
-        <label>新密码</label>
-        <input type="text" value="" oninput="cacheEditAdmin(this, 'passwd');">
-
         <input type="submit" class="button hollow secondary" value="设置" onclick="updateAdmin(this, '${u.id}');">
       </form>
     </div>
@@ -140,9 +137,7 @@ function showEditAdmin(username) {
 
 var _saveAdmin = {};
 function cacheEditAdmin(t, k) {
-  if (k === 'passwd' && pass_preg.test(t.value)) {
-    _saveAdmin.passwd = t.value;
-  } else if (k === 'email' && email_preg.test(t.value)) {
+  if (k === 'email' && email_preg.test(t.value)) {
     _saveAdmin.email = t.value;
   } else if (k === 'role') {
     _saveAdmin.role = t.options[t.selectedIndex].value;
@@ -161,7 +156,11 @@ function updateAdmin (t, aid) {
     },
     body : JSON.stringify(_saveAdmin)
   }).then(d => {
-
+    if (d.status == 'OK') {
+      sysnotify('OK');
+      getAdminList();
+      cancelEditAdmin();
+    }
   }).catch(err => {
 
   }).finally(() => {
@@ -219,14 +218,59 @@ function showSetPasswd(username) {
         <input type="password" value="" id="my-passwd" placeholder="当前用户的密码">
 
         <label>新密码</label>
-        <input type="password" value="" id="new-passwd">
+        <input type="password" value="" id="reset-passwd">
 
         <label>重复新密码</label>
-        <input type="password" value="" id="re-new-passwd">
+        <input type="password" value="" id="re-reset-passwd" oninput="repassHint(this);">
 
         <input type="submit" class="button alert" value="设置" onclick="setAdminPasswd(this);">
       </form>
     </div>
     <div class="cell small-1 medium-2 large-3"></div>`;
     syscover(html);
+}
+
+function repassHint(t) {
+  let pass = document.getElementById('reset-passwd').value;
+  if (pass != t.value) {
+    t.style.background = '#f29b82';
+  } else {
+    t.style.background = '';
+  }
+}
+
+function setAdminPasswd (t) {
+  var u = {
+    id : document.getElementById('user-id').value.trim(),
+    passwd : document.getElementById('my-passwd').value.trim(),
+    newpasswd : document.getElementById('reset-passwd').value.trim(),
+  };
+
+  let repa = document.getElementById('re-reset-passwd').value.trim();
+  if (repa !== u.newpasswd) {
+    sysnotify('设置密码两次输入不一致','err');
+    return ;
+  }
+
+  t.disabled = true;
+  return userApiCall('/resetpasswd/'+u.id, {
+    method : 'PUT',
+    headers : {
+      'content-type' : 'text/plain'
+    },
+    body : JSON.stringify(u)
+  })
+  .then(d => {
+    if (d.status == 'OK') {
+      sysnotify('OK');
+      unsyscover();
+    } else {
+      sysnotify(d.errmsg, 'err');
+    }
+  })
+  .catch(err => {
+    sysnotify(err.message,'err');
+  }).finally(() => {
+    t.disabled = false;
+  });
 }

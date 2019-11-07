@@ -132,3 +132,83 @@ function fmtLoadInfo (info) {
 
   return html;
 }
+
+function showResetAdminPasswd() {
+
+  var html = `<div class="grid-x">
+      <div class="cell small-5 medium-3 large-2"></div>
+      <div class="cell small-4 medium-6 large-6"></div>
+      <div class="cell small-3 medium-3 large-2">
+        <a href="javascript:unsyscover();"><h3>X</h3></a>
+      </div>
+    </div>
+    <div class="grid-x">
+    <div class="cell small-1 medium-2 large-3"></div>
+    <div class="cell small-10 medium-8 large-6">
+      <form onsubmit="return false;">
+        <label>原密码</label>
+        <input type="password" value="" id="my-passwd" placeholder="当前用户的密码">
+
+        <label>新密码</label>
+        <input type="password" value="" id="new-passwd" placeholder="7～20位，字母数字和特殊字符 -_.!@#$%^&*">
+
+        <label>重复新密码</label>
+        <input type="password" value="" id="re-new-passwd" oninput="repassHint(this);" placeholder="7～20位，字母数字和特殊字符 -_.!@#$%^&*">
+
+        <input type="submit" class="button alert" value="设置" onclick="resetAdminPasswd(this);">
+      </form>
+    </div>
+    <div class="cell small-1 medium-2 large-3"></div>`;
+    syscover(html);
+}
+
+function repassHint(t) {
+  let pass = document.getElementById('new-passwd').value;
+  if (pass != t.value) {
+    t.style.background = '#f29b82';
+  } else {
+    t.style.background = '';
+  }
+}
+
+var pass_preg = /^[a-z0-9\-\_\.\!\@\#\$\%\^\&\*]{7,20}$/i;
+
+function resetAdminPasswd (t) {
+  var u = {
+    passwd : document.getElementById('my-passwd').value.trim(),
+    newpasswd : document.getElementById('new-passwd').value.trim(),
+  };
+
+  let repa = document.getElementById('re-new-passwd').value.trim();
+  if (repa !== u.newpasswd) {
+    sysnotify('设置密码两次输入不一致','err');
+    return ;
+  }
+
+  if (!pass_preg.test(u.newpasswd)) {
+    sysnotify('密码太弱，要求7～20位，字母数字和特殊字符 -_.!@#$%^&*', 8000);
+    return ;
+  }
+
+  t.disabled = true;
+  return userApiCall('/resetselfpass/', {
+    method : 'PUT',
+    headers : {
+      'content-type' : 'text/plain'
+    },
+    body : JSON.stringify(u)
+  })
+  .then(d => {
+    if (d.status == 'OK') {
+      sysnotify('OK');
+      unsyscover();
+    } else {
+      sysnotify(d.errmsg, 'err');
+    }
+  })
+  .catch(err => {
+    sysnotify(err.message,'err');
+  }).finally(() => {
+    t.disabled = false;
+  });
+}

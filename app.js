@@ -41,7 +41,11 @@ if (cluster.isWorker) {
   app.service.funcs = funcs;
 
   app.service.siteimgpath = __dirname + '/images';
+  app.service.alog = {};
+  app.service.cors = cfg.cors;
 }
+
+var _themeStaticCache = {};
 
 if (cluster.isWorker) {
   let tb = new tbload();
@@ -97,6 +101,7 @@ if (cluster.isWorker) {
         app.service.theme.reload(app.service.siteinfo.info);
       }, 1000);
     } else if (name === 'change-theme') {
+      _themeStaticCache = {};
       app.service.theme.setTheme(app.service.siteinfo.info.theme);
     }
   });
@@ -114,7 +119,7 @@ if (cluster.isWorker) {
     } catch (err) {
       c.status (404);
     }
-  }, '@page-static');
+  }, '@admin-page');
 
   app.get('/', async c => {
     c.res.body = c.service.theme.find('home');
@@ -123,20 +128,22 @@ if (cluster.isWorker) {
   var faviconCache = null;
   app.router.get('/favicon.ico', async c => {
     try {
-        c.setHeader('content-type', 'image/x-icon');
-        c.res.encoding = 'binary';
-        if (faviconCache) {
-            c.res.body = faviconCache.data;
-            c.setHeader('content-length', faviconCache.length);
-        }
+      c.setHeader('content-type', 'image/x-icon');
+      c.res.encoding = 'binary';
+      if (faviconCache && (faviconCache.time + 300000) > Date.now()) {
+        c.res.body = faviconCache.data;
+        c.setHeader('content-length', faviconCache.length);
+      } else {
         c.res.body = await funcs.readFile('./favicon.ico', 'binary');
         faviconCache = {
-            data : c.res.body,
-            length: c.res.body.length
+          data : c.res.body,
+          length: c.res.body.length,
+          time: Date.now()
         };
+      }
     } catch (err) {
-        console.log(err);
-        c.res.body = '';
+      //console.log(err);
+      c.res.body = '';
     }
   });
 
@@ -164,7 +171,6 @@ if (cluster.isWorker) {
     }
   }, '@page-static');
 
-  var _themeStaticCache = {};
   app.router.get('/theme/*', async c => {
     if (c.param.starPath.indexOf('.css') > 0) {
         c.setHeader('content-type', 'text/css; charset=utf-8');
@@ -202,36 +208,23 @@ if (cluster.isWorker) {
   }, '@page-static');
 }
 
+if (cluster.isWorker) {
+  //启用IP白名单中间件
+  if (cfg.allowList.length > 0) {
+    app.service.allowList = cfg.allowList;
+    let alip = require('./middleware/allowlist');
+    app.use(alip, {
+      group : '/admin'
+    });
+    app.use(alip, {
+      group: 'admin-page'
+    });
+  }
+}
+
 if (process.argv.indexOf('-d') > 0) {
   app.config.daemon = true;
   app.config.showLoadInfo = true;
 }
 
 app.daemon(cfg.port, cfg.host);
-
-/* 
-if (cluster.isWorker) {
-  var _apikey = {
-    token       : '',
-    key         : '',
-    createTime  : 0,
-  };
-
-  app.service.apikey = cfg.apikey;
-  var makeApiKey = function () {
-    let h = crypto.createHash('md5');
-    _apikey.key = `dj_${parseInt(Math.random()*100000)}`;
-    h.update(_apikey.key + app.service.apikey);
-    _apikey.token = h.digest('hex');
-    _apikey.createTime = Date.now();
-  };
-
-  makeApiKey();
-  setInterval(() => {
-    makeApiKey();
-  }, 600000);
-
-  app.router.get('/page-apikey', async c => {
-    c.res.body = _apikey;
-  });
-} */

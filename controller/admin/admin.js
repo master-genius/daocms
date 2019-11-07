@@ -43,6 +43,15 @@ class admin {
         return ;
       }
     } */
+    
+    c.body.id = c.param.id;
+    if (c.box.user.role === 'root' 
+      && c.body.role !== undefined 
+      && c.box.user.id === c.param.id)
+    {
+      c.res.body = await c.service.api.ret('EUDEF', 'root用户不能修改自己的身份');
+      return ;
+    }
     let r = await c.service.admin.update(c.body);
     if (r) {
       c.res.body = await c.service.api.ret(0);

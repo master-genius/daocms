@@ -38,6 +38,8 @@ function adminLogin() {
       localStorage.setItem('userinfo', JSON.stringify(d.data.user));
       location.href = '/adminpage/home';
     } else {
+      document.getElementById('passwd').value = '';
+      document.getElementById('username').value = '';
       sysnotify(d.errmsg, 'err');
     }
   })

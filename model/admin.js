@@ -89,6 +89,7 @@ admin.prototype.update = async function (u) {
   }
 
   a.push(u.id);
+  
   sql = `${sql.substring(0, sql.length-1)} WHERE id=$${i}`;
 
   let r = await this.db.query(sql, a);
@@ -98,8 +99,8 @@ admin.prototype.update = async function (u) {
   return true;
 };
 
-admin.prototype.setPasswd = async function (id, passwd) {
-  let sql = 'UPDATE admin SET passwd=$1,salt=$2 WHERE id=$3';
+admin.prototype.setPasswd = async function (id, passwd, ufield = 'id') {
+  let sql = `UPDATE admin SET passwd=$1,salt=$2 WHERE ${ufield}=$3`;
   let salt = funcs.makeSalt();
   let npass = this.hashPass(passwd, salt);
   let r = await this.db.query(sql, [

@@ -7,7 +7,7 @@ var docs = function (db) {
   this.db = db;
   this.genid = function (pstr = '') {
     let pre = `${Date.now()}${Math.random()}${pstr}`;
-    return funcs.sha1(pre);
+    return funcs.sha1(pre).substring(0,12);
   };
 };
 

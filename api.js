@@ -59,7 +59,7 @@ class wapi {
         status = 'EWRONG';
       }
       r.status = status;
-      r.errmsg = this.einfo(r.status);
+      r.errmsg = data || this.einfo(r.status);
     }
     return r;
   }

@@ -19,6 +19,7 @@ class resetpasswd {
       c.res.body = c.service.api.ret('EBADDATA');
       return ;
     }
+    //only root can reset others passwd
     if (c.box.user.id !== u.id && c.box.user.role !== 'root') {
       c.res.body = c.service.api.ret('EPERMDENY');
       return ;
