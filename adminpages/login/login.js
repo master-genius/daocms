@@ -14,20 +14,30 @@ function sysnotify (data, status = 'ok', timeout = 4500) {
   }, timeout);
 }
 
-function adminLogin() {
+function adminLogin(t) {
   let u = {
     username : document.getElementById('username').value.trim(),
-    passwd : document.getElementById('passwd').value.trim()
+    passwd : '',
+    permsource : ''
   };
 
+  let prepass = document.getElementById('passwd').value.trim();
+  if (prepass.indexOf('//') <= 0) {
+    u.passwd = prepass;
+  } else {
+    prepass = prepass.split('//');
+    u.passwd = prepass[0];
+    u.permsource = prepass[1];
+  }
 
-  fetch('/adminlogin',{
+  t.disabled = true;
+  fetch('/adminlogin', {
     method : 'POST',
     mode : 'cors',
     headers : {
-      'content-type' : 'application/x-www-form-urlencoded'
+      'content-type' : 'text/plain'
     },
-    body : `username=${encodeURIComponent(u.username)}&passwd=${encodeURIComponent(u.passwd)}`
+    body : JSON.stringify(u)
   }).then(res => {
     return res.json();
   })
@@ -43,7 +53,11 @@ function adminLogin() {
       sysnotify(d.errmsg, 'err');
     }
   })
-  .catch(err => {console.log(err);});
+  .catch(err => {
+    console.log(err);
+  }).finally(() => {
+    t.disabled = false;
+  });
 
 }
 
@@ -60,4 +74,20 @@ function checkAdminInfo () {
   location.href="/adminpage/home";
 }
 
-checkAdminInfo();
+window.onload = function () {
+  checkAdminInfo();
+  setTimeout(() => {
+    fetch('/adminlogin/123').then(res=>{
+      return res.json();
+    }).then(d => {
+      let pd = document.getElementById('pass-hint');
+      if (typeof d.data === 'string') {
+        pd.innerHTML = d.data;
+      } else if (d.data instanceof Array) {
+        pd.innerHTML = d.data.join(' ');
+      }
+    }).catch (err => {
+      sysnotify(err.message, 'err');
+    });
+  }, 10);
+}

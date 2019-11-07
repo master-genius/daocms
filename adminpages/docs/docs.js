@@ -180,6 +180,7 @@ function initEditor (html = '') {
       'quote',
       'image',
       'table',
+      'video',
       'code',
       'undo',
       'redo'
@@ -267,6 +268,9 @@ function docTemp (d) {
     <div>作者：${d.adminname}</div>
     <div>${d.updatetime.substring(0,10)}</div>
     <input type="checkbox" value="${d.id}" class="doc-list-cell">
+    <div style="text-align:right;">
+      <a href="javascript:previewDoc('${d.id}');" style="font-size:86%;color:#454648;">查看</a>
+    </div>
     </div>
   </div>`;
 }
@@ -422,4 +426,34 @@ function clearSearch() {
   wo.set('cur-page', '1');
   wo.set('kwd', '');
   docList();
+}
+
+function renderPreview(d) {
+  var html = `<div class="grid-x">
+    <div class="cell hide-for-small-only medium-2 large-3"></div>
+    <div class="cell small-12 medium-8 large-6" style="padding:0.6rem;">
+      <h3>${d.title}</h3>
+      <p><hr></hr></p>
+      <p>${d.content}</p>
+      <p>&nbsp;</p>
+    </div>
+    <div class="cell hide-for-small-only medium-2 large-3"></div>
+    <div style="z-index:1024;position:fixed;bottom:0.1rem;left:25%;width:50%;background:#efeffa;text-align:center;padding:0.5rem;">
+      <a href="javascript:unsyscover();">&nbsp;&nbsp;关闭预览&nbsp;&nbsp;</a>
+    </div>
+  </div>`;
+  syscover(html);
+}
+
+function previewDoc(id) {
+  userApiCall('/content/'+id).then(d => {
+    if (d.status == 'OK') {
+      renderPreview(d.data);
+    } else {
+      sysnotify(d.errmsg, 'err');
+    }
+  })
+  .catch (err => {
+    sysnotify(err.message, 'err');
+  });
 }

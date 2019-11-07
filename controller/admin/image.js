@@ -53,7 +53,7 @@ class image {
       let imgdir = `${c.service.imagepath}`;
       let imgpath = '';
       if (all === false) {
-        imgpath = `${c.box.user.id.substring(0,8)}`;
+        imgpath = `${c.box.user.id.substring(0,10)}`;
         this.loadimgdir(`${imgdir}/${imgpath}`, cell, imgpath);
         return cell;
       }
@@ -123,7 +123,7 @@ class image {
     
     imgname = `${tpre}${imgname}${this.typeext[ imgfile['content-type'] ]}`;
 
-    let subpath = c.box.user.id.substring(0,8);
+    let subpath = c.box.user.id.substring(0,10);
     let imgdir = `${c.service.imagepath}/${subpath}`;
     try {
       fs.accessSync(imgdir, fs.constants.F_OK);

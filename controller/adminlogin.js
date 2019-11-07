@@ -40,25 +40,41 @@ class adminlogin {
     }
   }
 
-  async create (c) {
-    let username = c.body.username;
-    let passwd = c.body.passwd;
+  async get (c) {
+    c.res.body = c.service.api.ret(0, c.service.permsource);
+  }
 
-    let u = await c.service.admin.get(username);
+  //login
+  async create (c) {
+    try {
+      var d = JSON.parse(c.body);
+    } catch (err) {
+      c.res.body = c.service.api.ret('EBADDATA', '数据格式错误');
+      return ;
+    }
+
+    let u = await c.service.admin.get(d.username);
     if (u === null) {
       c.res.body = c.service.api.ret('EPERMDENY', '用户名或密码错误');
       return ;
     }
 
-    let st = this.checkLogStat(c, username);
+    let st = this.checkLogStat(c, d.username);
     if (st[0] === false) {
       c.res.body = c.service.api.ret('EUDEF', st[1]);
       return ;
     }
 
-    let r = await c.service.admin.verifyPasswd(username, passwd);
+    if (c.service.usePassCallback 
+      && !c.service.passCallback(c.service.permsource, d.permsource))
+    {
+      c.res.body = c.service.api.ret('EPERMDENY', '用户名或密码错误');
+      return ;
+    }
+
+    let r = await c.service.admin.verifyPasswd(d.username, d.passwd);
     if (r === false) {
-      this.logFailed(c, username);
+      this.logFailed(c, d.username);
       c.res.body = c.service.api.ret('EPERMDENY', '用户名或密码错误');
       return ;
     }

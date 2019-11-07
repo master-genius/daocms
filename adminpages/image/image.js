@@ -62,9 +62,9 @@ function deleteSelectImages() {
   if (!confirm('确认删除？')) {
     return ;
   }
-  syscover(`<div style="text-align:center;padding:0.8rem;margin-top:3rem;">
-    <h4>delete ···</h4>
-  </div>`);
+  syscover(`<div style="text-align:center;padding:0.8rem;margin-top:18%;">
+    <h5 style="text-shadow:0.2px 0.2px 0.2px #afafaf;color:#343536;">deleting···</h5>
+  </div>`, 'background:rgba(23,23,25, 0.42);');
   return userApiCall('/image', {
     method : 'DELETE',
     headers : {
@@ -86,26 +86,7 @@ function deleteSelectImages() {
   .finally(() => {
     setTimeout(() => {
       unsyscover();
-    }, 800);
-  });
-}
-
-function getdelLog(logid) {
-  return userApiCall('/image/'+logid, {
-    method : 'PUT',
-    mode : 'cors',
-    headers : {
-      'content-type' : 'text/plain'
-    },
-    body : logid
-  }).then(d => {
-    if (d.status === 'OK') {
-      sysnotify('删除完成');
-      getImages();
-    }
-  })
-  .catch (err => {
-
+    }, 850);
   });
 }
 

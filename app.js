@@ -7,9 +7,9 @@ const dbcfg = require('./dbconfig');
 const docs = require('./model/docs');
 const admin = require('./model/admin');
 const siteinfo = require('./model/siteinfo');
-const usertoken = require('./user');
+const usertoken = require('./lib/user');
 const api = require('./api');
-const crypto = require('crypto');
+//const crypto = require('crypto');
 const page = require('./apage');
 const fs = require('fs');
 const cms = require('./cms');
@@ -43,6 +43,13 @@ if (cluster.isWorker) {
   app.service.siteimgpath = __dirname + '/images';
   app.service.alog = {};
   app.service.cors = cfg.cors;
+  app.service.usePassCallback = false;
+  app.service.permsource = '';
+  if (cfg.usePassCallback && typeof cfg.passCallback === 'function') {
+    app.service.usePassCallback = cfg.usePassCallback;
+    app.service.passCallback = cfg.passCallback;
+    app.service.permsource = cfg.permsource;
+  }
 }
 
 var _themeStaticCache = {};

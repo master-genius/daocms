@@ -87,7 +87,7 @@ class apage {
         <div class="full-container">
           <div class="grid-x">
           <div class="cell small-3 medium-3 large-2" style="padding:0.4rem;line-height:2.2rem;text-align:center;background:#f2f1f9;">
-            DocDao
+            <span style="font-size:121%;color:4a4a4a;">TextLight</span>
           </div>
           <div class="cell small-9 medium-9 large-10" style="text-align:center;line-height:2.2rem;border-bottom:solid 0.06rem #eaeaef;padding:0.5rem;background:#dfdfe9;">
             ${p.topinfo}
@@ -96,7 +96,7 @@ class apage {
         </div>
         <div class="full-container" id="main">
           <div class="grid-x">
-            <div class="cell small-3 medium-3 large-2">
+            <div class="cell small-3 medium-3 large-2" style="border-right:solid 0.05rem #efefef;">
               <div id="admin-info" style="padding:0.2rem;"></div>
               ${p.menu}
             </div>

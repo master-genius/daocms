@@ -158,10 +158,10 @@ function sysnotify (data, status = 'ok', timeout = 4500) {
   }, timeout);
 }
 
-function syscover (data) {
+function syscover (data, back = 'background-color:#fefeff;') {
   let d = document.getElementById('sys-cover');
   if (!d) {return ;}
-  d.style.cssText = 'z-index:99;position:fixed;width:100%;height:100%;background-color:#fefeff;top:0;left:0;overflow:auto;';
+  d.style.cssText = `z-index:99;position:fixed;width:100%;height:100%;top:0;left:0;overflow:auto;${back}`;
   d.innerHTML = data;
   document.body.style.overflow = 'hidden';
 }
