@@ -89,7 +89,7 @@ class page {
           </div>
         </div>
         
-        <div class="container" id="main" style="margin-top:0.5rem;">
+        <div class="container" id="__main__" style="margin-top:0.5rem;">
           <div class="row">
             <div class="col-sm-1 col-md-1 col-lg-2"></div>
             <div class="col-sm-10 col-md-10 col-lg-8">
@@ -110,7 +110,7 @@ class page {
         </script>
         <script>
           function setMainSize() {
-            let d = document.getElementById('main');
+            let d = document.getElementById('__main__');
             if (d) {
               d.style.minHeight = document.documentElement.clientHeight * 0.85 + 'px';
             }

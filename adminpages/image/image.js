@@ -28,9 +28,21 @@ function renderImageList () {
   document.body.scrollTop = 0;
 }
 
+function sortImages (imgs) {
+  imgs.sort((a, b) => {
+    let ar = a.split('_')[1];
+    let br = b.split('_')[1];
+    if (ar == br) {
+      return 0;
+    }
+    return (ar > br) ? -1 : 1;
+  });
+}
+
 async function getImages() {
   return userApiCall('/image').then(d => {
     _imageList = d;
+    sortImages(_imageList);
     _total_page = totalPage(_imageList.length, _pagesize);
     _pagi.setpi(wo.get('img-page'), _total_page);
     renderImageList();
